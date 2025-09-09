@@ -25,17 +25,20 @@ model Empresa {
   problemas     Problema[] // Uma empresa pode ter vários problemas
 }
 
-model Problema {
-  id        String    @id @default(cuid())
-  categoria String
-  descricao String
-  arquivoUrl String?  // Opcional, para o link do arquivo
-  status    String    @default("aberto") // "aberto", "em análise", "resolvido"
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+// prisma/schema.prisma
 
-  empresaId String
-  empresa   Empresa   @relation(fields: [empresaId], references: [id])
+model Problema {
+  id          String    @id @default(cuid())
+  assunto     String    // <-- ADICIONE ESTA LINHA
+  categoria   String
+  descricao   String
+  arquivoUrl  String?
+  status      String    @default("aberto")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  empresaId   String
+  empresa     Empresa   @relation(fields: [empresaId], references: [id])
 }
 
 // Adicione um modelo para o Administrador, se necessário
