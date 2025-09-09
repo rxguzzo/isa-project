@@ -1,0 +1,47 @@
+// arquivo: prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // Mude para sqlite
+  url      = env("DATABASE_URL")
+}
+
+// arquivo: prisma/schema.prisma
+
+model Empresa {
+  id            String    @id @default(cuid())
+  razaoSocial   String
+  cnpj          String    @unique
+  nomeResponsavel String
+  email         String    @unique
+  telefone      String
+  senha         String // Armazenará o hash da senha
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  problemas     Problema[] // Uma empresa pode ter vários problemas
+}
+
+model Problema {
+  id        String    @id @default(cuid())
+  categoria String
+  descricao String
+  arquivoUrl String?  // Opcional, para o link do arquivo
+  status    String    @default("aberto") // "aberto", "em análise", "resolvido"
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  empresaId String
+  empresa   Empresa   @relation(fields: [empresaId], references: [id])
+}
+
+// Adicione um modelo para o Administrador, se necessário
+model Admin {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  senha     String
+  createdAt DateTime  @default(now())
+}
