@@ -12,51 +12,63 @@ export async function POST(request: Request) {
     const { email, senha } = body;
 
     if (!email || !senha) {
-      return NextResponse.json(
-        { message: 'Email e senha são obrigatórios.' },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: 'Email e senha são obrigatórios.' }, { status: 400 });
     }
 
-    // 1. Encontrar a empresa pelo email
-    const empresa = await prisma.empresa.findUnique({
-      where: { email },
-    });
+    // 1. Tenta encontrar o usuário como Admin
+    const admin = await prisma.admin.findUnique({ where: { email } });
+    if (admin) {
+      const senhaCorreta = await bcrypt.compare(senha, admin.senha);
+      if (senhaCorreta) {
+        // É um Admin! Gerar token de Admin.
+        const tokenPayload = { userId: admin.id, email: admin.email, role: 'ADMIN' };
+        const token = jwt.sign(tokenPayload, process.env.JWT_SECRET!, { expiresIn: '8h' });
+        
+        // CORREÇÃO AQUI
+        // 1. Criamos o objeto de resposta PRIMEIRO
+        const response = NextResponse.json({ redirectTo: '/admin/dashboard' });
+        
+        // 2. Usamos response.cookies.set() para definir o cookie
+        response.cookies.set('auth_token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          path: '/',
+          maxAge: 60 * 60 * 8, // 8 horas
+        });
 
-    if (!empresa) {
-      return NextResponse.json(
-        { message: 'Credenciais inválidas.' },
-        { status: 401 } // Unauthorized
-      );
+        // 3. Retornamos o objeto de resposta modificado
+        return response;
+      }
     }
 
-    // 2. Comparar a senha enviada com o hash salvo no banco
-    const senhaCorreta = await bcrypt.compare(senha, empresa.senha);
+    // 2. Se não for Admin, tenta encontrar como Empresa
+    const empresa = await prisma.empresa.findUnique({ where: { email } });
+    if (empresa) {
+      const senhaCorreta = await bcrypt.compare(senha, empresa.senha);
+      if (senhaCorreta) {
+        // É uma Empresa! Gerar token de Empresa.
+        const tokenPayload = { userId: empresa.id, email: empresa.email, role: 'COMPANY' };
+        const token = jwt.sign(tokenPayload, process.env.JWT_SECRET!, { expiresIn: '1d' });
 
-    if (!senhaCorreta) {
-      return NextResponse.json(
-        { message: 'Credenciais inválidas.' },
-        { status: 401 } // Unauthorized
-      );
+        // CORREÇÃO AQUI
+        const response = NextResponse.json({ redirectTo: '/dashboard' });
+        response.cookies.set('auth_token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          path: '/',
+          maxAge: 60 * 60 * 24, // 1 dia
+        });
+        return response;
+      }
     }
 
-    // 3. Gerar o JSON Web Token (JWT)
-    const tokenPayload = {
-      empresaId: empresa.id,
-      email: empresa.email,
-    };
-
-    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET!, {
-      expiresIn: '1d', // Token expira em 1 dia
-    });
-
-    return NextResponse.json({ message: 'Login bem-sucedido!', token }, { status: 200 });
+    // 3. Se não encontrou ninguém ou a senha estava errada
+    return NextResponse.json({ message: 'Credenciais inválidas.' }, { status: 401 });
 
   } catch (error) {
     console.error('Erro no login:', error);
-    return NextResponse.json(
-      { message: 'Erro interno do servidor.' },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: 'Erro interno do servidor.' }, { status: 500 });
   }
 }

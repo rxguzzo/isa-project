@@ -6,10 +6,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { PanelTopOpen, Mail, Lock } from 'lucide-react';
 
-// ===================================================================
-// ===== MUDANÇA CRÍTICA: Componente e seu tipo movidos para FORA =====
-// ===================================================================
-
+// Definindo o tipo e o componente InputField fora da função principal
+// para evitar o bug de perda de foco.
 type InputFieldProps = {
   icon: ElementType;
   name: string;
@@ -62,12 +60,10 @@ export default function PaginaLogin() {
 
       const data = await response.json();
 
-      if (response.ok) {
+      if (response.ok && data.redirectTo) {
         setStatus('Login bem-sucedido! Redirecionando...');
-        localStorage.setItem('isa-token', data.token);
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 1500);
+        // A API define o cookie, então o frontend só precisa redirecionar!
+        router.push(data.redirectTo);
       } else {
         setStatus(`Erro: ${data.message || 'Credenciais inválidas.'}`);
         setIsSubmitting(false);
@@ -109,7 +105,7 @@ export default function PaginaLogin() {
           <p className="mb-6 text-gray-500">Bem-vindo de volta!</p>
           
           <form onSubmit={handleSubmit} className="space-y-5">
-            <InputField icon={Mail} name="email" type="email" placeholder="Email Corporativo" value={formData.email} onChange={handleChange} />
+            <InputField icon={Mail} name="email" type="email" placeholder="Email" value={formData.email} onChange={handleChange} />
             <InputField icon={Lock} name="senha" type="password" placeholder="Senha" value={formData.senha} onChange={handleChange} />
             
             <button

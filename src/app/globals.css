@@ -1,5 +1,9 @@
 /* src/app/globals.css */
 
+html {
+  scroll-behavior: smooth;
+}
+
 /* Esta é a nova forma de importar tudo no Tailwind v4 */
 @import "tailwindcss";
 
@@ -19,4 +23,6 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  
 }
+
