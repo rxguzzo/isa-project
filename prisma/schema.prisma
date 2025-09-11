@@ -9,7 +9,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// arquivo: prisma/schema.prisma
+
 
 model Empresa {
   id            String    @id @default(cuid())
@@ -27,18 +27,37 @@ model Empresa {
 
 // prisma/schema.prisma
 
-model Problema {
-  id          String    @id @default(cuid())
-  assunto     String    // <-- ADICIONE ESTA LINHA
-  categoria   String
-  descricao   String
-  arquivoUrl  String?
-  status      String    @default("aberto")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+// prisma/schema.prisma
 
-  empresaId   String
-  empresa     Empresa   @relation(fields: [empresaId], references: [id])
+model Problema {
+  id                      String    @id @default(cuid())
+
+  // Informações da Demanda
+  areaDemanda             String   // Usamos um array de Strings para seleção múltipla - vamos trocar no postgree posteriormente
+  assunto                 String
+  descricao               String
+  objetivos               String?   // Opcional
+  nivelUrgencia           String    // "baixa", "média", "alta"
+
+  // Informações Complementares
+  orcamento               String?   // Opcional
+  comoConheceu            String?   // Opcional
+  consentimentoLGPD       Boolean   @default(false)
+  disponibilidadeVisita   Boolean   @default(false)
+
+  // Status Interno
+  status                  String    @default("aberto")
+
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  // Relacionamento com a Empresa que enviou
+  empresaId               String
+  empresa                 Empresa   @relation(fields: [empresaId], references: [id])
+
+  // Campos antigos que não usaremos mais neste formulário
+  // categoria               String (substituído por areaDemanda)
+  // arquivoUrl              String? (mantido para o futuro)
 }
 
 // Adicione um modelo para o Administrador, se necessário

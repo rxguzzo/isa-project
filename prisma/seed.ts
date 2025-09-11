@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   const adminEmail = 'admin@isa.com'; // <-- COLOQUE SEU EMAIL AQUI
-  const adminPassword = 'senha-forte-123'; // <-- COLOQUE SUA SENHA AQUI
+  const adminPassword = 'ISA2025*'; // <-- COLOQUE SUA SENHA AQUI
 
   const existingAdmin = await prisma.admin.findUnique({
     where: { email: adminEmail },
