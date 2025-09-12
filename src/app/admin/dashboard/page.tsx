@@ -3,21 +3,23 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { PanelTopOpen } from 'lucide-react'; // Ícone para o logo, se quiser manter
+import { LogOut } from 'lucide-react';
+import { StatusBadge } from '@/components/ui/StatusBadge'; // Usando nosso componente reutilizável
 
-// Definição de tipos
+// Tipagens alinhadas com o schema.prisma e as respostas da API
 type Empresa = {
   id: string;
   razaoSocial: string;
-  email: string;
-  cnpj: string;
+  cnpj: string | null;
   createdAt: string;
+  usuario: {
+    email: string;
+  };
 };
 
 type Problema = {
   id: string;
   assunto: string;
-  categoria: string;
   status: string;
   createdAt: string;
   empresa: {
@@ -32,8 +34,7 @@ export default function AdminDashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Como o middleware já protege esta rota, a página pode assumir que o usuário
-    // está autenticado e buscar os dados diretamente.
+    // O middleware já protege esta página. Agora buscamos os dados.
     const fetchAdminData = async () => {
       setIsLoading(true);
       try {
@@ -43,10 +44,10 @@ export default function AdminDashboardPage() {
           fetch('/api/admin/problemas'),
         ]);
 
-        // Se alguma API falhar, o middleware já deve ter redirecionado,
-        // mas como um fallback, podemos tratar o erro.
         if (!resEmpresas.ok || !resProblemas.ok) {
-          throw new Error('Falha ao carregar dados do painel.');
+          // Se alguma API falhar, o middleware já deve ter agido,
+          // mas como fallback, forçamos o logout e redirecionamento.
+          throw new Error('Falha na autenticação ou na busca de dados.');
         }
 
         const dataEmpresas = await resEmpresas.json();
@@ -55,29 +56,30 @@ export default function AdminDashboardPage() {
         setProblemas(dataProblemas);
 
       } catch (err) {
-        console.error('Erro no dashboard de admin:', err);
-        // Em caso de erro (ex: token expirado), o middleware já cuida do redirecionamento
-        // mas podemos forçar aqui também por segurança.
-        router.push('/login');
+        console.error("Erro no dashboard de admin:", err);
+        // Em caso de erro, a melhor ação é deslogar o usuário
+        handleLogout(true);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchAdminData();
-  }, [router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleLogout = async () => {
-    // Chama a API para limpar o cookie seguro no servidor
-    await fetch('/api/auth/logout', { method: 'POST' });
+  const handleLogout = async (isErrorFlow = false) => {
+    if (!isErrorFlow) {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    }
     router.push('/login');
   };
-
+  
   const handleStatusChange = async (problemaId: string, novoStatus: string) => {
     try {
       const response = await fetch(`/api/admin/problemas/${problemaId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' }, // O cookie é enviado automaticamente
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: novoStatus }),
       });
 
@@ -94,31 +96,19 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const StatusBadge = ({ status }: { status: string }) => {
-    const statusStyles: { [key: string]: string } = {
-      'aberto': 'bg-blue-100 text-blue-800',
-      'em análise': 'bg-yellow-100 text-yellow-800',
-      'resolvido': 'bg-green-100 text-green-800',
-    };
-    return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusStyles[status.toLowerCase()] || 'bg-gray-100 text-gray-800'}`}>
-        {status}
-      </span>
-    );
-  };
-
   if (isLoading) {
-    return <div className="flex h-screen items-center justify-center">Carregando painel administrativo...</div>;
+    return <div className="flex h-screen items-center justify-center text-lg font-semibold">Carregando Painel Administrativo...</div>;
   }
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
-      <header className="mb-6 flex justify-between items-center">
+      <header className="mb-8 flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-800">Painel Administrativo</h1>
         <button 
-          onClick={handleLogout}
-          className="px-4 py-2 text-sm bg-gray-700 text-white rounded hover:bg-gray-800"
+          onClick={() => handleLogout()}
+          className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-700 text-white rounded hover:bg-gray-800"
         >
+          <LogOut className="h-4 w-4" />
           Sair
         </button>
       </header>
@@ -132,7 +122,7 @@ export default function AdminDashboardPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase">Razão Social</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase">Email</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase">Email do Responsável</th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase">Data de Cadastro</th>
                 </tr>
               </thead>
@@ -141,7 +131,7 @@ export default function AdminDashboardPage() {
                   empresas.map((empresa) => (
                     <tr key={empresa.id}>
                       <td className="px-4 py-4 text-sm font-medium text-gray-900">{empresa.razaoSocial}</td>
-                      <td className="px-4 py-4 text-sm text-gray-500">{empresa.email}</td>
+                      <td className="px-4 py-4 text-sm text-gray-500">{empresa.usuario.email}</td>
                       <td className="px-4 py-4 text-sm text-gray-500">{new Date(empresa.createdAt).toLocaleDateString()}</td>
                     </tr>
                   ))

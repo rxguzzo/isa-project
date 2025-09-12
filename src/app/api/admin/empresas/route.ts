@@ -1,26 +1,35 @@
 // src/app/api/admin/empresas/route.ts
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { headers } from 'next/headers'; // Importar headers
 
 const prisma = new PrismaClient();
 
 export async function GET() {
-  // Lembre-se: O nosso middleware (em src/middleware.ts) já está protegendo
-  // esta rota, garantindo que apenas um usuário com o papel 'ADMIN'
-  // consiga acessá-la. Por isso, não precisamos verificar o token aqui dentro.
+  const userRole = (await headers()).get('x-user-role'); // Pegue o role
+  const usuarioId = (await headers()).get('x-user-id'); // Pegue o ID também, se precisar futuramente
+
+  // ----- A VERIFICAÇÃO ESTÁ AQUI -----
+  if (userRole !== 'ADMIN') {
+    return NextResponse.json({ message: 'Acesso negado. Apenas administradores.' }, { status: 403 });
+  }
+  // ------------------------------------
+
   try {
     const empresas = await prisma.empresa.findMany({
-      orderBy: {
-        createdAt: 'desc', // Ordena as empresas da mais nova para a mais antiga
-      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        usuario: { // Inclui o usuário para saber quem é o dono da empresa
+          select: {
+            email: true,
+            // Adicione outros campos do usuário que o admin precise ver
+          }
+        }
+      }
     });
     return NextResponse.json(empresas);
   } catch (error) {
-    // Se ocorrer um erro no banco de dados, logamos e retornamos um erro 500
-    console.error('Erro ao buscar empresas:', error);
-    return NextResponse.json(
-      { message: 'Erro interno do servidor ao buscar empresas.' },
-      { status: 500 }
-    );
+    console.error("Erro ao buscar empresas para admin:", error);
+    return NextResponse.json({ message: 'Erro ao buscar empresas.' }, { status: 500 });
   }
 }

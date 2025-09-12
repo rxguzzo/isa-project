@@ -1,69 +1,54 @@
-// arquivo: prisma/schema.prisma
-
+// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite" // Mude para sqlite
+  provider = "postgresql" // Confirmando que agora é PostgreSQL
   url      = env("DATABASE_URL")
 }
 
-
-
-model Empresa {
-  id            String    @id @default(cuid())
-  razaoSocial   String
-  cnpj          String    @unique
-  nomeResponsavel String
-  email         String    @unique
-  telefone      String
-  senha         String // Armazenará o hash da senha
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  problemas     Problema[] // Uma empresa pode ter vários problemas
-}
-
-// prisma/schema.prisma
-
-// prisma/schema.prisma
-
-model Problema {
-  id                      String    @id @default(cuid())
-
-  // Informações da Demanda
-  areaDemanda             String   // Usamos um array de Strings para seleção múltipla - vamos trocar no postgree posteriormente
-  assunto                 String
-  descricao               String
-  objetivos               String?   // Opcional
-  nivelUrgencia           String    // "baixa", "média", "alta"
-
-  // Informações Complementares
-  orcamento               String?   // Opcional
-  comoConheceu            String?   // Opcional
-  consentimentoLGPD       Boolean   @default(false)
-  disponibilidadeVisita   Boolean   @default(false)
-
-  // Status Interno
-  status                  String    @default("aberto")
-
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
-
-  // Relacionamento com a Empresa que enviou
-  empresaId               String
-  empresa                 Empresa   @relation(fields: [empresaId], references: [id])
-
-  // Campos antigos que não usaremos mais neste formulário
-  // categoria               String (substituído por areaDemanda)
-  // arquivoUrl              String? (mantido para o futuro)
-}
-
-// Adicione um modelo para o Administrador, se necessário
-model Admin {
+// O usuário que faz o login. Pode ser um usuário normal ou um admin.
+model Usuario {
   id        String    @id @default(cuid())
   email     String    @unique
   senha     String
+  nome      String?
+  role      String    @default("USER") // Papel: 'USER' ou 'ADMIN'
   createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  empresas  Empresa[] // Um usuário pode ter várias empresas
+}
+
+// A empresa agora pertence a um usuário.
+model Empresa {
+  id            String    @id @default(cuid())
+  razaoSocial   String
+  cnpj          String?   @unique // CNPJ opcional e único
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  usuarioId     String
+  usuario       Usuario   @relation(fields: [usuarioId], references: [id])
+
+  problemas     Problema[]
+}
+
+model Problema {
+  id                      String    @id @default(cuid())
+  areaDemanda             String[]  // Agora podemos usar array com PostgreSQL!
+  assunto                 String
+  descricao               String
+  objetivos               String?
+  nivelUrgencia           String
+  orcamento               String?
+  comoConheceu            String?
+  consentimentoLGPD       Boolean   @default(false)
+  disponibilidadeVisita   Boolean   @default(false)
+  status                  String    @default("aberto")
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  empresaId               String
+  empresa                 Empresa   @relation(fields: [empresaId], references: [id])
 }

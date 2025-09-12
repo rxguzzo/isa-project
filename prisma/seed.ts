@@ -5,10 +5,10 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  const adminEmail = 'admin@isa.com'; // <-- COLOQUE SEU EMAIL AQUI
-  const adminPassword = 'ISA2025*'; // <-- COLOQUE SUA SENHA AQUI
+  const adminEmail = 'admin@isa.com';
+  const adminPassword = 'senha-forte-123';
 
-  const existingAdmin = await prisma.admin.findUnique({
+  const existingAdmin = await prisma.usuario.findUnique({
     where: { email: adminEmail },
   });
 
@@ -19,13 +19,15 @@ async function main() {
 
   const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
-  await prisma.admin.create({
+  await prisma.usuario.create({
     data: {
       email: adminEmail,
       senha: hashedPassword,
+      nome: 'Administrador ISA',
+      role: 'ADMIN',
     },
   });
-  console.log('Usuário admin criado com sucesso!');
+  console.log('Usuário admin (do tipo Usuario) criado com sucesso!');
 }
 
 main()

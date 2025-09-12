@@ -13,37 +13,54 @@ const getSecretKey = () => {
 
 export async function middleware(request: NextRequest) {
   const tokenCookie = request.cookies.get('auth_token');
+
+  // Rotas públicas que não precisam de autenticação
+  const publicPaths = ['/login', '/cadastro', '/'];
   const { pathname } = request.nextUrl;
 
-  // Se não houver token, redireciona para o login imediatamente
+  // Se a rota for pública, apenas continua
+  if (publicPaths.some(path => pathname === path || pathname.startsWith(`${path}/`))) {
+    return NextResponse.next();
+  }
+
+  // Se não há token e não é uma rota pública, redireciona para o login
   if (!tokenCookie) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
   try {
     const { payload } = await jwtVerify(tokenCookie.value, getSecretKey());
-    const userRole = payload.role as string;
     const userId = payload.userId as string;
+    const userRole = payload.role as string; // Obtenha o role do payload
 
-    // Verifica as rotas de Admin
+    // Redirecionamento de admin e user para seus dashboards específicos se tentarem ir para '/'
+    if (pathname === '/' && userRole === 'ADMIN') {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    }
+    if (pathname === '/' && userRole === 'USER') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
+    // Proteção de Rotas de Admin
     if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
       if (userRole !== 'ADMIN') {
+        // Se não for admin, nega e redireciona para o dashboard de usuário
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+    }
+
+    // Proteção de Rotas de Empresa (Usuário Comum)
+    // Se um admin tentar acessar o dashboard de usuário, permitimos (pode ser útil para debug ou gerenciamento)
+    if (pathname.startsWith('/dashboard') || pathname.startsWith('/api/empresas') || pathname.startsWith('/api/problemas')) {
+      if (userRole !== 'USER' && userRole !== 'ADMIN') { 
         return NextResponse.redirect(new URL('/login', request.url));
       }
     }
 
-    // Verifica as rotas de Empresa (Dashboard e suas APIs)
-    if (pathname.startsWith('/dashboard') || pathname.startsWith('/api/problemas') || pathname.startsWith('/api/auth/me')) {
-      if (userRole !== 'COMPANY') {
-        return NextResponse.redirect(new URL('/login', request.url));
-      }
-    }
-    
-    // Se a autenticação foi bem-sucedida, adiciona o ID do usuário
-    // nos headers para que as API Routes possam acessá-lo.
+    // AQUI ESTÁ A CHAVE: Clone a requisição e adicione os cabeçalhos x-user-id e x-user-role
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set('x-user-id', userId);
-    requestHeaders.set('x-user-role', userRole);
+    requestHeaders.set('x-user-role', userRole); // <--- INJETANDO O ROLE TAMBÉM
 
     return NextResponse.next({
       request: {
@@ -52,20 +69,22 @@ export async function middleware(request: NextRequest) {
     });
 
   } catch (err) {
-    // Se o token for inválido, apaga e redireciona
+    console.error('Token inválido ou erro de verificação:', err);
     const response = NextResponse.redirect(new URL('/login', request.url));
     response.cookies.delete('auth_token');
     return response;
   }
 }
 
-// Configuração para dizer em quais rotas o middleware deve rodar
+// Lista explícita de todas as rotas que o middleware deve proteger
 export const config = {
   matcher: [
     '/dashboard/:path*',
     '/admin/:path*',
     '/api/admin/:path*',
+    '/api/empresas/:path*',
     '/api/problemas/:path*',
-    '/api/auth/me',
+    // '/api/auth/me', // Pode ser removido se não houver uma rota /api/auth/me que precise de auth
+    // Adicione outras rotas de API que você precisa proteger aqui
   ],
 };

@@ -4,12 +4,11 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// O middleware já protege esta rota, garantindo que apenas admins possam acessá-la.
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const { id } = params;
+  const { id } = context.params;
   try {
     const { status } = await request.json();
 
@@ -20,11 +19,25 @@ export async function PUT(
     const problemaAtualizado = await prisma.problema.update({
       where: { id: id },
       data: { status: status },
-      include: { empresa: { select: { razaoSocial: true, email: true } } },
+      // ===== A MUDANÇA ESTÁ AQUI =====
+      include: { 
+        empresa: { 
+          select: { 
+            razaoSocial: true,
+            // Agora, para pegar o email do dono da empresa, acessamos a relação "usuario"
+            usuario: { 
+              select: { 
+                email: true // Selecionamos o email do USUARIO que é dono da empresa
+              } 
+            } 
+          } 
+        } 
+      },
     });
-
-    // AQUI é onde você adicionaria a lógica para enviar um e-mail de notificação
-    // para problemaAtualizado.empresa.email informando a mudança de status.
+    
+    // Se você estiver usando o email aqui, terá que acessá-lo como:
+    // problemaAtualizado.empresa.usuario.email
+    // const emailDoCliente = problemaAtualizado.empresa.usuario.email;
 
     return NextResponse.json(problemaAtualizado);
   } catch (error) {
