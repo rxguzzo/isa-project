@@ -22,7 +22,6 @@ export default function SeletorDeEmpresasPage() {
       try {
         const res = await fetch('/api/empresas/minhas-empresas');
         if (!res.ok) {
-          // Se não estiver autorizado ou ocorrer um erro, redireciona para o login
           router.push('/login');
           return;
         }
@@ -30,7 +29,7 @@ export default function SeletorDeEmpresasPage() {
         setEmpresas(data);
       } catch (error) {
         console.error("Erro ao carregar empresas:", error);
-        router.push('/login'); // Em caso de erro de rede, também redireciona
+        router.push('/login');
       } finally {
         setIsLoading(false);
       }
@@ -44,7 +43,7 @@ export default function SeletorDeEmpresasPage() {
   };
 
   if (isLoading) {
-    return <div className="flex h-screen items-center justify-center text-lg font-semibold">Carregando empresas...</div>;
+    return <div className="flex h-screen items-center justify-center">Carregando empresas...</div>;
   }
 
   return (
@@ -52,17 +51,16 @@ export default function SeletorDeEmpresasPage() {
       <header className="bg-white shadow-sm">
         <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
           <span className="text-xl font-bold text-gray-800">ISA</span>
-          <button onClick={handleLogout} className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100">
+          {/* ===== CORREÇÃO AQUI ===== */}
+          <button onClick={() => handleLogout()} className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100">
             <LogOut className="h-4 w-4" />
             Sair
           </button>
         </div>
       </header>
-
       <main className="container mx-auto max-w-7xl p-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Selecione ou Crie uma Empresa</h1>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Cards para cada empresa existente */}
           {empresas.map((empresa) => (
             <Link key={empresa.id} href={`/dashboard/${empresa.id}`}>
               <div className="group flex flex-col justify-between h-48 rounded-lg border bg-white p-6 transition-all hover:border-[#b91c1c] hover:shadow-lg cursor-pointer">
@@ -74,8 +72,6 @@ export default function SeletorDeEmpresasPage() {
               </div>
             </Link>
           ))}
-
-          {/* Card para adicionar nova empresa */}
           <Link href="/dashboard/nova-empresa">
             <div className="group flex h-48 flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50/50 text-gray-500 transition-all hover:border-[#b91c1c] hover:text-[#b91c1c] hover:shadow-lg cursor-pointer">
               <PlusCircle className="h-10 w-10" />

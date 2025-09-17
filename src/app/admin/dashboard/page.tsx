@@ -3,21 +3,22 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogOut } from 'lucide-react';
-import { StatusBadge } from '@/components/ui/StatusBadge'; // Usando nosso componente reutilizável
+import { AdminLayout } from '@/components/admin/AdminLayout'; // Importação CORRETA
+import Link from 'next/link';
+import { Building2, FileText, Clock, CheckCircle, ChevronRight, Settings } from 'lucide-react'; // Removido UserRoundCog duplicado, adicionado Settings
+import { StatCard } from '@/components/admin/StatCard';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { formatDistanceToNowStrict } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-// Tipagens alinhadas com o schema.prisma e as respostas da API
-type Empresa = {
-  id: string;
-  razaoSocial: string;
-  cnpj: string | null;
-  createdAt: string;
-  usuario: {
-    email: string;
-  };
+// Tipagens
+type Stats = {
+  totalEmpresas: number;
+  demandasAbertas: number;
+  demandasEmAnalise: number;
+  demandasResolvidas: number;
 };
-
-type Problema = {
+type ProblemaRecente = {
   id: string;
   assunto: string;
   status: string;
@@ -28,165 +29,106 @@ type Problema = {
 };
 
 export default function AdminDashboardPage() {
-  const [empresas, setEmpresas] = useState<Empresa[]>([]);
-  const [problemas, setProblemas] = useState<Problema[]>([]);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [recentesProblemas, setRecentesProblemas] = useState<ProblemaRecente[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    // O middleware já protege esta página. Agora buscamos os dados.
     const fetchAdminData = async () => {
       setIsLoading(true);
       try {
-        // O navegador envia o cookie 'auth_token' automaticamente
-        const [resEmpresas, resProblemas] = await Promise.all([
-          fetch('/api/admin/empresas'),
+        const [resStats, resProblemas] = await Promise.all([
+          fetch('/api/admin/stats'),
           fetch('/api/admin/problemas'),
         ]);
 
-        if (!resEmpresas.ok || !resProblemas.ok) {
-          // Se alguma API falhar, o middleware já deve ter agido,
-          // mas como fallback, forçamos o logout e redirecionamento.
-          throw new Error('Falha na autenticação ou na busca de dados.');
+        if (!resStats.ok || !resProblemas.ok) {
+          // Se houver um problema de autenticação, o AdminLayout (que encapsula) pode lidar com o redirecionamento globalmente.
+          // Aqui, apenas lançamos o erro.
+          throw new Error('Falha ao carregar dados do painel.');
         }
 
-        const dataEmpresas = await resEmpresas.json();
+        const dataStats = await resStats.json();
         const dataProblemas = await resProblemas.json();
-        setEmpresas(dataEmpresas);
-        setProblemas(dataProblemas);
+        
+        setStats(dataStats);
+        setRecentesProblemas(dataProblemas);
 
       } catch (err) {
         console.error("Erro no dashboard de admin:", err);
-        // Em caso de erro, a melhor ação é deslogar o usuário
-        handleLogout(true);
+        // O handleLogout é chamado apenas em caso de falha de autenticação/sessão,
+        // que o AdminLayout deve tentar gerenciar de forma mais centralizada.
+        // Se este erro for de dados, apenas exibimos uma mensagem.
+        // router.push('/login'); // Removido, AdminLayout pode lidar com isso.
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchAdminData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // Dependências ajustadas
 
-  const handleLogout = async (isErrorFlow = false) => {
-    if (!isErrorFlow) {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    }
-    router.push('/login');
-  };
-  
-  const handleStatusChange = async (problemaId: string, novoStatus: string) => {
-    try {
-      const response = await fetch(`/api/admin/problemas/${problemaId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: novoStatus }),
-      });
-
-      if (!response.ok) throw new Error('Falha ao atualizar o status.');
-
-      setProblemas((problemasAtuais) =>
-        problemasAtuais.map((p) =>
-          p.id === problemaId ? { ...p, status: novoStatus } : p
-        )
-      );
-    } catch (error) {
-      console.error('Erro ao mudar o status:', error);
-      alert('Não foi possível atualizar o status.');
-    }
-  };
+  // Removemos o handleLogout direto daqui, pois ele já está no AdminLayout.
+  // Se precisar de um logout específico da página, adapte.
 
   if (isLoading) {
-    return <div className="flex h-screen items-center justify-center text-lg font-semibold">Carregando Painel Administrativo...</div>;
+    return (
+      <AdminLayout>
+        <div className="flex justify-center items-center h-full">
+          <p className="text-gray-700">Carregando Centro de Comando...</p>
+        </div>
+      </AdminLayout>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <header className="mb-8 flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-800">Painel Administrativo</h1>
-        <button 
-          onClick={() => handleLogout()}
-          className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-700 text-white rounded hover:bg-gray-800"
-        >
-          <LogOut className="h-4 w-4" />
-          Sair
-        </button>
+    <AdminLayout> {/* O Layout admin agora envolve todo o conteúdo */}
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-800 font-display">Centro de Comando</h1>
+        <p className="text-gray-500">Uma visão geral e em tempo real do seu sistema.</p>
       </header>
       
-      <main className="space-y-8">
-        {/* Tabela de Empresas */}
-        <section className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold mb-4">Empresas Cadastradas ({empresas.length})</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase">Razão Social</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase">Email do Responsável</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase">Data de Cadastro</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {empresas.length > 0 ? (
-                  empresas.map((empresa) => (
-                    <tr key={empresa.id}>
-                      <td className="px-4 py-4 text-sm font-medium text-gray-900">{empresa.razaoSocial}</td>
-                      <td className="px-4 py-4 text-sm text-gray-500">{empresa.usuario.email}</td>
-                      <td className="px-4 py-4 text-sm text-gray-500">{new Date(empresa.createdAt).toLocaleDateString()}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr><td colSpan={3} className="text-center py-8 text-gray-500">Nenhuma empresa cadastrada.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
+      {/* Grid de Cards de Estatísticas */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <StatCard title="Total de Empresas" value={stats?.totalEmpresas ?? 0} icon={Building2} />
+        <StatCard title="Demandas Abertas" value={stats?.demandasAbertas ?? 0} icon={FileText} />
+        <StatCard title="Em Análise" value={stats?.demandasEmAnalise ?? 0} icon={Clock} />
+        <StatCard title="Resolvidas" value={stats?.demandasResolvidas ?? 0} icon={CheckCircle} />
+      </div>
 
-        {/* Tabela de Chamados */}
-        <section className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold mb-4">Todos os Chamados ({problemas.length})</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase">Empresa</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase">Assunto</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase">Data</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {problemas.length > 0 ? (
-                  problemas.map((p) => (
-                    <tr key={p.id}>
-                      <td className="px-4 py-4 text-sm text-gray-800">{p.empresa.razaoSocial}</td>
-                      <td className="px-4 py-4 text-sm font-medium text-gray-900">{p.assunto}</td>
-                      <td className="px-4 py-4 text-sm text-gray-500">{new Date(p.createdAt).toLocaleDateString()}</td>
-                      <td className="px-4 py-4 text-sm"><StatusBadge status={p.status} /></td>
-                      <td className="px-4 py-4 text-sm">
-                        <select
-                          title={`Mudar status do chamado ${p.id}`}
-                          value={p.status}
-                          onChange={(e) => handleStatusChange(p.id, e.target.value)}
-                          className="rounded-md border-gray-300 shadow-sm focus:border-[#b91c1c] focus:ring-[#b91c1c]"
-                        >
-                          <option value="aberto">Aberto</option>
-                          <option value="em análise">Em Análise</option>
-                          <option value="resolvido">Resolvido</option>
-                        </select>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr><td colSpan={5} className="text-center py-8 text-gray-500">Nenhum chamado registrado.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </main>
-    </div>
+      {/* Lista de Atividades Recentes */}
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">Últimas Demandas Registradas</h2>
+        <div className="space-y-4">
+          {recentesProblemas.length > 0 ? (
+            recentesProblemas.slice(0, 5).map((p) => (
+              <Link key={p.id} href={`/admin/demandas`} className="block group">
+                <div className="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex-shrink-0 bg-red-50 rounded-full p-2">
+                    <FileText className="h-5 w-5 text-red-700" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{p.assunto}</p>
+                    <p className="text-sm text-gray-500 truncate">{p.empresa.razaoSocial}</p>
+                  </div>
+                  <div className="flex-shrink-0 text-right space-y-1">
+                    <StatusBadge status={p.status} />
+                    <p className="text-xs text-gray-400">{formatDistanceToNowStrict(new Date(p.createdAt), { addSuffix: true, locale: ptBR })}</p>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <ChevronRight className="h-5 w-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              </Link>
+            ))
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <p>Nenhuma demanda registrada ainda.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </AdminLayout>
   );
 }

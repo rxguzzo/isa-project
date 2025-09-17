@@ -22,12 +22,13 @@ const initialState = {
 export default function NovaDemandaPage() {
   const router = useRouter();
   const params = useParams();
-  const empresaId = params.empresaId as string;
+  const empresaId = params.empresaId as string; // Empresa ID obtido da URL
 
   const [formState, setFormState] = useState(initialState);
   const [formStatus, setFormStatus] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Funções para manipular as mudanças no formulário
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormState(prev => ({ ...prev, [name]: value }));
@@ -48,32 +49,53 @@ export default function NovaDemandaPage() {
     });
   };
 
+  // Função para enviar o formulário
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
+
+    // Validações no frontend antes de enviar
     if (!formState.consentimentoLGPD) {
       setFormStatus('Erro: O consentimento de dados (LGPD) é obrigatório.');
       return;
     }
-    // Adicione outras validações aqui se necessário
+    if (formState.areaDemanda.length === 0) {
+      setFormStatus('Erro: Selecione pelo menos uma Área da Demanda.');
+      return;
+    }
+    if (!formState.assunto.trim() || !formState.descricao.trim()) {
+      setFormStatus('Erro: Assunto e Descrição são obrigatórios.');
+      return;
+    }
+
     setIsSubmitting(true);
     setFormStatus('Enviando solicitação...');
     
-    const response = await fetch('/api/problemas', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...formState, empresaId }),
-    });
+    try {
+      const response = await fetch('/api/problemas', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-empresa-id': empresaId, // <--- AQUI ESTÁ A CORREÇÃO PRINCIPAL!
+        },
+        // O body agora NÃO PRECISA mais do empresaId, pois ele já foi para o header
+        body: JSON.stringify(formState), 
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (response.ok) {
-      setFormStatus('Solicitação enviada com sucesso! Redirecionando...');
-      router.refresh();
-      setTimeout(() => {
-        router.push(`/dashboard/${empresaId}`);
-      }, 2000);
-    } else {
-      setFormStatus(`Erro: ${data.message || 'Tente novamente.'}`);
+      if (response.ok) {
+        setFormStatus('Solicitação enviada com sucesso! Redirecionando...');
+        router.refresh(); // Diz ao Next.js para buscar os dados novamente na próxima página
+        setTimeout(() => {
+          router.push(`/dashboard/${empresaId}/demandas`); // Redireciona para a lista de demandas
+        }, 2000);
+      } else {
+        setFormStatus(`Erro: ${data.message || 'Tente novamente.'}`);
+        setIsSubmitting(false);
+      }
+    } catch (error) {
+      console.error("Erro de rede ou servidor:", error);
+      setFormStatus("Erro de conexão. Verifique sua rede e tente novamente.");
       setIsSubmitting(false);
     }
   };
@@ -170,7 +192,7 @@ export default function NovaDemandaPage() {
             </fieldset>
 
             <div className="flex justify-end items-center">
-              {formStatus && <p className="text-sm mr-4">{formStatus}</p>}
+              {formStatus && <p className={`text-sm mr-4 ${formStatus.includes('Erro') ? 'text-red-600' : 'text-green-600'}`}>{formStatus}</p>}
               <button type="submit" className="inline-flex items-center gap-2 px-8 py-3 bg-[#b91c1c] text-white font-semibold rounded-md shadow-sm hover:bg-[#991b1b]" disabled={isSubmitting}>
                 <Send className="h-5 w-5" />
                 {isSubmitting ? 'Enviando...' : 'Enviar Solicitação'}

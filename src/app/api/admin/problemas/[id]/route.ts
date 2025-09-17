@@ -1,6 +1,7 @@
 // src/app/api/admin/problemas/[id]/route.ts
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { headers } from 'next/headers';
 
 const prisma = new PrismaClient();
 
@@ -8,6 +9,11 @@ export async function PUT(
   request: Request,
   context: { params: { id: string } }
 ) {
+  const userRole = (await headers()).get('x-user-role');
+  if (userRole !== 'ADMIN') {
+    return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 });
+  }
+
   const { id } = context.params;
   try {
     const { status } = await request.json();
@@ -19,25 +25,10 @@ export async function PUT(
     const problemaAtualizado = await prisma.problema.update({
       where: { id: id },
       data: { status: status },
-      // ===== A MUDANÇA ESTÁ AQUI =====
-      include: { 
-        empresa: { 
-          select: { 
-            razaoSocial: true,
-            // Agora, para pegar o email do dono da empresa, acessamos a relação "usuario"
-            usuario: { 
-              select: { 
-                email: true // Selecionamos o email do USUARIO que é dono da empresa
-              } 
-            } 
-          } 
-        } 
-      },
     });
-    
-    // Se você estiver usando o email aqui, terá que acessá-lo como:
-    // problemaAtualizado.empresa.usuario.email
-    // const emailDoCliente = problemaAtualizado.empresa.usuario.email;
+
+    // FUTURAMENTE: Aqui é o local ideal para adicionar a lógica de
+    // envio de e-mail para notificar o cliente sobre a mudança de status.
 
     return NextResponse.json(problemaAtualizado);
   } catch (error) {

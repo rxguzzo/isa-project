@@ -1,43 +1,45 @@
 // prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql" // Confirmando que agora é PostgreSQL
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// O usuário que faz o login. Pode ser um usuário normal ou um admin.
 model Usuario {
-  id        String    @id @default(cuid())
+  id        String    @id @default(uuid())
+  nome      String
   email     String    @unique
   senha     String
-  nome      String?
   role      String    @default("USER") // Papel: 'USER' ou 'ADMIN'
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  empresas  Empresa[] // Um usuário pode ter várias empresas
+  empresaId String?
+  empresa   Empresa?  @relation(fields: [empresaId], references: [id])
 }
 
-// A empresa agora pertence a um usuário.
 model Empresa {
-  id            String    @id @default(cuid())
-  razaoSocial   String
-  cnpj          String?   @unique // CNPJ opcional e único
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id           String     @id @default(uuid())
+  razaoSocial  String     @unique
+  nomeFantasia String?
+  cnpj         String     @unique
+  endereco     String?
+  telefone     String?
+  emailContato String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
-  usuarioId     String
-  usuario       Usuario   @relation(fields: [usuarioId], references: [id])
-
-  problemas     Problema[]
+  problemas    Problema[]
+  usuarios     Usuario[] // Uma empresa pode ter vários usuários
 }
 
 model Problema {
-  id                      String    @id @default(cuid())
-  areaDemanda             String[]  // Agora podemos usar array com PostgreSQL!
+  id                      String    @id @default(uuid())
+  areaDemanda             String[]  // Corrigido para usar o poder do PostgreSQL
   assunto                 String
   descricao               String
   objetivos               String?
@@ -49,6 +51,17 @@ model Problema {
   status                  String    @default("aberto")
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
+
   empresaId               String
   empresa                 Empresa   @relation(fields: [empresaId], references: [id])
+}
+
+model ConfiguracaoGlobal {
+  id                      String    @id @default(uuid())
+  notificacoesAtivas      Boolean   @default(true)
+  modoManutencao          Boolean   @default(false)
+  mensagemBoasVindas      String?
+  minVersaoAppRequerida   String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 }

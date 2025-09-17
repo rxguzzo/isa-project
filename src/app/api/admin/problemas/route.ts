@@ -1,11 +1,11 @@
 // src/app/api/admin/problemas/route.ts
-import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { NextResponse, NextRequest } from 'next/server';
+import { PrismaClient, Prisma } from '@prisma/client'; // <-- 1. Importe 'Prisma'
 import { headers } from 'next/headers';
 
 const prisma = new PrismaClient();
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const userRole = (await headers()).get('x-user-role');
 
   if (userRole !== 'ADMIN') {
@@ -13,23 +13,39 @@ export async function GET(request: Request) {
   }
 
   try {
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
+    const search = searchParams.get('search');
+
+    // 2. Aplique o tipo correto em vez de 'any'
+    const where: Prisma.ProblemaWhereInput = {};
+
+    if (status && status !== 'all') {
+      where.status = status;
+    }
+    if (search) {
+      where.OR = [
+        { assunto: { contains: search, mode: 'insensitive' } },
+        { descricao: { contains: search, mode: 'insensitive' } },
+        { empresa: { razaoSocial: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
     const problemas = await prisma.problema.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
-      // ===== CORREÇÃO AQUI =====
-      // Simplificamos a consulta para buscar apenas o que a tabela precisa.
+      where,
+      orderBy: { createdAt: 'desc' },
       include: {
         empresa: {
           select: {
-            razaoSocial: true, // Apenas o nome da empresa
+            id: true,
+            razaoSocial: true,
+            cnpj: true,
           },
         },
       },
     });
     return NextResponse.json(problemas);
   } catch (error) {
-    // Se ocorrer um erro, ele será logado no terminal do servidor
     console.error("Erro ao buscar problemas para admin:", error);
     return NextResponse.json({ message: 'Erro interno do servidor ao buscar problemas.' }, { status: 500 });
   }

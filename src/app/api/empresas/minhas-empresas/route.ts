@@ -6,7 +6,6 @@ import { headers } from 'next/headers';
 const prisma = new PrismaClient();
 
 export async function GET() {
-  // O middleware injeta o x-user-id
   const usuarioId = (await headers()).get('x-user-id');
 
   if (!usuarioId) {
@@ -14,13 +13,23 @@ export async function GET() {
   }
 
   try {
+    // Busca todas as empresas onde o ID do usuário corresponde
     const empresas = await prisma.empresa.findMany({
-      where: { usuarioId: usuarioId },
-      orderBy: { razaoSocial: 'asc' },
+      where: {
+        usuarios: {
+          some: {
+            id: usuarioId,
+          },
+        },
+      },
+      orderBy: {
+        razaoSocial: 'asc',
+      },
     });
+
     return NextResponse.json(empresas);
   } catch (error) {
     console.error("Erro ao buscar empresas do usuário:", error);
-    return NextResponse.json({ message: 'Erro ao buscar empresas' }, { status: 500 });
+    return NextResponse.json({ message: 'Erro ao buscar empresas do usuário.' }, { status: 500 });
   }
 }

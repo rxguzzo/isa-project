@@ -1,43 +1,59 @@
-// src/app/api/empresas/route.ts
-import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+// src/app/api/admin/empresas/route.ts
+import { NextResponse, NextRequest } from 'next/server';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { headers } from 'next/headers';
 
 const prisma = new PrismaClient();
 
-export async function POST(request: Request) {
-  const usuarioId = (await headers()).get('x-user-id'); // Injetado pelo middleware
-
-  if (!usuarioId) {
-    return NextResponse.json({ message: 'Não autorizado' }, { status: 401 });
+export async function GET(request: NextRequest) {
+  const userRole = (await headers()).get('x-user-role');
+  if (userRole !== 'ADMIN') {
+    return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 });
   }
 
   try {
-    const { razaoSocial, cnpj } = await request.json();
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search');
 
-    if (!razaoSocial) {
-      return NextResponse.json({ message: 'Razão Social é obrigatória.' }, { status: 400 });
+    const where: Prisma.EmpresaWhereInput = {};
+
+    if (search) {
+      where.OR = [
+        { razaoSocial: { contains: search, mode: 'insensitive' } },
+        { nomeFantasia: { contains: search, mode: 'insensitive' } },
+        { cnpj: { contains: search, mode: 'insensitive' } },
+      ];
     }
 
-    // Opcional: Validar se o CNPJ, se fornecido, já existe
-    if (cnpj) {
-      const existingCnpj = await prisma.empresa.findUnique({ where: { cnpj } });
-      if (existingCnpj) {
-        return NextResponse.json({ message: 'Este CNPJ já está cadastrado.' }, { status: 409 });
-      }
-    }
-
-    const novaEmpresa = await prisma.empresa.create({
-      data: {
-        razaoSocial,
-        cnpj,
-        usuarioId: usuarioId, // Associa a nova empresa ao usuário logado
+    const empresas = await prisma.empresa.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      // A correção está aqui: garantimos que a relação 'usuarios' seja incluída
+      include: {
+        usuarios: {
+          select: { 
+            id: true,
+            nome: true, // Incluindo o nome para referência futura
+          },
+        },
       },
     });
 
-    return NextResponse.json(novaEmpresa, { status: 201 });
+    // O Prisma já retorna `usuarios` como um array, então podemos contar o tamanho
+    const empresasComContagem = empresas.map(emp => ({
+      ...emp,
+      totalUsuarios: emp.usuarios.length,
+    }));
+
+    return NextResponse.json(empresasComContagem);
   } catch (error) {
-    console.error("Erro ao cadastrar empresa:", error);
-    return NextResponse.json({ message: 'Erro ao cadastrar empresa.' }, { status: 500 });
+    console.error("Erro ao buscar empresas para admin:", error);
+    // O log do erro no terminal do servidor nos dirá o problema exato
+    return NextResponse.json({ message: 'Erro interno do servidor ao buscar empresas.' }, { status: 500 });
   }
+}
+
+// A função POST para criar uma empresa, caso precise dela aqui
+export async function POST(request: NextRequest) {
+    // ... (seu código para o POST, se aplicável a esta rota)
 }

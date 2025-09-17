@@ -1,16 +1,17 @@
 // src/app/dashboard/[empresaId]/demandas/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // Importe useCallback
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { StatusBadge } from '@/components/ui/StatusBadge'; // Importando nosso novo componente
+import { StatusBadge } from '@/components/ui/StatusBadge';
 
+// A tipagem deve corresponder exatamente ao que a API retorna
 type Problema = {
   id: string;
   assunto: string;
-  areaDemanda: string;
+  areaDemanda: string; // A API retorna como string
   nivelUrgencia: string;
   status: string;
   createdAt: string;
@@ -24,27 +25,31 @@ export default function AcompanharDemandasPage() {
   const [problemas, setProblemas] = useState<Problema[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  // Usamos useCallback para otimizar a função de busca
+  const fetchDemandas = useCallback(async () => {
     if (!empresaId) return;
 
-    const fetchDemandas = async () => {
-      setIsLoading(true);
-      try {
-        const res = await fetch(`/api/empresas/${empresaId}/problemas`);
-        if (!res.ok) {
-          throw new Error('Falha ao buscar as demandas.');
-        }
-        const data = await res.json();
-        setProblemas(data);
-      } catch (error) {
-        console.error(error);
-        // Poderia adicionar um estado de erro para mostrar na tela
-      } finally {
-        setIsLoading(false);
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/empresas/${empresaId}/problemas`);
+      if (!res.ok) {
+        throw new Error('Falha ao buscar as demandas.');
       }
-    };
+      const data = await res.json();
+      setProblemas(data);
+    } catch (error) {
+      console.error("Erro ao carregar demandas:", error);
+      // Em caso de erro (ex: token inválido), redireciona para o seletor
+      router.push('/dashboard');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [empresaId, router]); // Adicionamos as dependências da função
+
+  // Agora, o useEffect depende da função memorizada
+  useEffect(() => {
     fetchDemandas();
-  }, [empresaId]);
+  }, [fetchDemandas]);
 
   if (isLoading) {
     return <div className="flex h-screen items-center justify-center">Carregando demandas...</div>;
@@ -57,18 +62,18 @@ export default function AcompanharDemandasPage() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Voltar para o Dashboard da Empresa
         </Link>
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">Acompanhar Demandas</h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-8 font-display">Histórico de Demandas</h1>
 
         <div className="rounded-lg bg-white p-6 shadow-md">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assunto</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Área(s)</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Urgência</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data de Abertura</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Assunto</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Área(s)</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Urgência</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data de Abertura</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">

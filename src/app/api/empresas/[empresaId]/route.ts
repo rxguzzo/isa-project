@@ -5,10 +5,9 @@ import { headers } from 'next/headers';
 
 const prisma = new PrismaClient();
 
-// A MUDANÇA É AQUI NO SEGUNDO ARGUMENTO DA FUNÇÃO
 export async function GET(request: Request, context: { params: { empresaId: string } }) {
-  const { empresaId } = context.params; // Extraia empresaId primeiro
-  const usuarioId = (await headers()).get('x-user-id'); // Agora pode usar await headers()
+  const { empresaId } = context.params;
+  const usuarioId = (await headers()).get('x-user-id');
 
   if (!usuarioId) {
     return NextResponse.json({ message: 'Não autorizado' }, { status: 401 });
@@ -18,7 +17,11 @@ export async function GET(request: Request, context: { params: { empresaId: stri
     const empresa = await prisma.empresa.findFirst({
       where: {
         id: empresaId,
-        usuarioId: usuarioId,
+        usuarios: {
+          some: {
+            id: usuarioId,
+          },
+        },
       },
       select: {
         id: true,
