@@ -3,13 +3,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { AdminLayout } from '@/components/admin/AdminLayout'; // Importação CORRETA
-import Link from 'next/link';
-// Certifique-se de que todos os ícones necessários estão importados
+import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Search, Filter, Eye, X } from 'lucide-react';
-// Componentes customizados
 import { StatusBadge } from '@/components/ui/StatusBadge';
-// Funções de data
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -38,17 +34,22 @@ type ProblemaCompleto = {
 export default function AdminDemandasPage() {
   const [demandas, setDemandas] = useState<ProblemaCompleto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  
+  // NOVO: Estado para o que é digitado no input (imediatamente)
+  const [rawSearchTerm, setRawSearchTerm] = useState('');
+  // EXISTENTE: Estado que realmente será usado na API (atualizado após debounce)
+  const [searchTerm, setSearchTerm] = useState(''); 
+
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedDemanda, setSelectedDemanda] = useState<ProblemaCompleto | null>(null);
   const router = useRouter();
 
-  // Função para buscar as demandas
+  // Função para buscar as demandas da API
   const fetchDemandas = useCallback(async () => {
     setIsLoading(true);
     try {
       const queryParams = new URLSearchParams();
-      if (searchTerm) queryParams.append('search', searchTerm);
+      if (searchTerm) queryParams.append('search', searchTerm); // Usa o 'searchTerm' DEBOUNCED
       if (filterStatus && filterStatus !== 'all') queryParams.append('status', filterStatus);
 
       const res = await fetch(`/api/admin/problemas?${queryParams.toString()}`);
@@ -62,17 +63,32 @@ export default function AdminDemandasPage() {
       if (err instanceof Error) {
         console.error(err.message);
       }
-      // Em caso de erro, apenas defina o estado de erro, o AdminLayout já cuidará do redirecionamento se houver um problema de autenticação global.
-      // router.push('/login'); // Removido para o AdminLayout gerenciar erros de sessão globalmente
+      // Redireciona para login em caso de erro (ex: autenticação)
+      router.push('/login'); 
     } finally {
       setIsLoading(false);
     }
-  }, [searchTerm, filterStatus]); // Removido 'router' do useCallback pois não é necessário aqui
+  }, [searchTerm, filterStatus, router]); //Dependências incluem searchTerm e filterStatus
 
-  // Efeito para carregar as demandas quando o componente monta ou os filtros mudam
+  // Efeito principal para buscar demandas, ativado por fetchDemandas
   useEffect(() => {
     fetchDemandas();
-  }, [fetchDemandas]);
+  }, [fetchDemandas]); // fetchDemandas muda quando searchTerm ou filterStatus mudam
+
+  // --- NOVO useEffect para implementar o Debounce
+  useEffect(() => {
+    // Define um timer para atualizar o searchTerm DEPOIS de 500ms
+    const handler = setTimeout(() => {
+      setSearchTerm(rawSearchTerm);
+    }, 2000); // Atraso de 500ms 
+
+    // Cleanup function: Se rawSearchTerm mudar novamente antes de 500ms, o timer anterior é cancelado.
+    // Isso evita que a busca seja disparada para cada letra digitada.
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [rawSearchTerm]); // Este useEffect só roda quando o 'rawSearchTerm' muda (usuário digitando)
+  // --- Fim do NOVO useEffect ---
 
   // Função para mudar o status de uma demanda
   const handleStatusChange = async (problemaId: string, novoStatus: string) => {
@@ -87,13 +103,11 @@ export default function AdminDemandasPage() {
         throw new Error('Falha ao atualizar o status.');
       }
 
-      // Atualiza o estado local para refletir a mudança imediatamente na UI
       setDemandas((demandasAtuais) =>
         demandasAtuais.map((p) =>
           p.id === problemaId ? { ...p, status: novoStatus } : p
         )
       );
-      // Se o modal estiver aberto para essa demanda, atualiza o status lá também
       if (selectedDemanda && selectedDemanda.id === problemaId) {
         setSelectedDemanda(prev => prev ? { ...prev, status: novoStatus } : null);
       }
@@ -107,45 +121,44 @@ export default function AdminDemandasPage() {
     }
   };
 
-  // Lógica de carregamento e erro agora dentro do AdminLayout
   if (isLoading && !selectedDemanda) {
     return (
       <AdminLayout>
         <div className="flex justify-center items-center h-full">
-          <p className="text-gray-700">Carregando Demandas...</p>
+          <p className="text-gray-700 text-lg">Carregando Demandas...</p>
         </div>
       </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout> {/* O Layout admin agora envolve todo o conteúdo */}
+    <AdminLayout>
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 font-display">Gerenciar Demandas</h1>
-        <p className="text-gray-500">Visualize e controle todas as solicitações das empresas.</p>
+        <p className="text-gray-500 mt-1">Visualize, filtre e controle todas as solicitações das empresas.</p>
       </header>
       
-      {/* Filtros e Busca */}
+      {/* Barra de Filtros e Busca */}
       <div className="bg-white p-4 rounded-lg shadow-md mb-6 flex flex-col sm:flex-row gap-4 items-center">
         <div className="relative flex-grow">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
           <input 
             type="text" 
             placeholder="Buscar por assunto ou empresa..." 
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-red-600 focus:border-red-600 transition-all" 
-            value={searchTerm} 
-            onChange={(e) => setSearchTerm(e.target.value)} 
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-[#b91c1c] focus:border-[#b91c1c] transition-colors" 
+            value={rawSearchTerm} // O input agora controla o 'rawSearchTerm'
+            onChange={(e) => setRawSearchTerm(e.target.value)} // Atualiza 'rawSearchTerm' a cada digitação
           />
         </div>
         <div className="relative">
           <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
           <select 
             title='Filtrar por Status'
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md appearance-none focus:ring-red-600 focus:border-red-600 transition-all bg-white" 
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md appearance-none focus:ring-[#b91c1c] focus:border-[#b91c1c] transition-colors bg-white" 
             value={filterStatus} 
             onChange={(e) => setFilterStatus(e.target.value)}
           >
-            <option value="all">Todos os Status</option>
+            <option value="all">Todos</option>
             <option value="aberto">Aberto</option>
             <option value="em análise">Em Análise</option>
             <option value="resolvido">Resolvido</option>
@@ -230,7 +243,6 @@ export default function AdminDemandasPage() {
       {selectedDemanda && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative animate-scale-in">
-            {/* Botão de Fechar no canto */}
             <button 
               onClick={() => setSelectedDemanda(null)} 
               className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
@@ -238,7 +250,6 @@ export default function AdminDemandasPage() {
             >
               <X className="h-5 w-5" />
             </button>
-
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-2xl font-bold font-display text-gray-800">{selectedDemanda.assunto}</h3>
               <p className="text-sm text-gray-500 mt-1">
@@ -246,45 +257,24 @@ export default function AdminDemandasPage() {
               </p>
               <div className="mt-3"><StatusBadge status={selectedDemanda.status} /></div>
             </div>
-
             <div className="p-6 space-y-5 text-sm">
               <div>
                 <strong className="font-semibold text-gray-800 block mb-1">Descrição Completa:</strong>
                 <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{selectedDemanda.descricao}</p>
               </div>
-              
               {selectedDemanda.objetivos && (
                 <div>
                   <strong className="font-semibold text-gray-800 block mb-1">Objetivos:</strong>
                   <p className="text-gray-700 whitespace-pre-wrap">{selectedDemanda.objetivos}</p>
                 </div>
               )}
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
-                <div>
-                  <strong className="font-semibold text-gray-800 block">Área(s) da Demanda:</strong>
-                  <p className="text-gray-700">{selectedDemanda.areaDemanda}</p>
-                </div>
-                <div>
-                  <strong className="font-semibold text-gray-800 block">Nível de Urgência:</strong>
-                  <p className="text-gray-700 capitalize">{selectedDemanda.nivelUrgencia}</p>
-                </div>
-                <div>
-                  <strong className="font-semibold text-gray-800 block">Orçamento Estimado:</strong>
-                  <p className="text-gray-700">{selectedDemanda.orcamento || 'Não definido'}</p>
-                </div>
-                <div>
-                  <strong className="font-semibold text-gray-800 block">Como Conheceu a ISA:</strong>
-                  <p className="text-gray-700">{selectedDemanda.comoConheceu || 'Não informado'}</p>
-                </div>
-                <div>
-                  <strong className="font-semibold text-gray-800 block">Disponibilidade para Visita Técnica:</strong>
-                  <p className="text-gray-700">{selectedDemanda.disponibilidadeVisita ? 'Sim' : 'Não'}</p>
-                </div>
-                <div>
-                  <strong className="font-semibold text-gray-800 block">Consentimento LGPD:</strong>
-                  <p className="text-gray-700">{selectedDemanda.consentimentoLGPD ? 'Concedido' : 'Não Concedido'}</p>
-                </div>
+                <div><strong className="font-semibold text-gray-800 block">Área(s) da Demanda:</strong><p className="text-gray-700">{selectedDemanda.areaDemanda}</p></div>
+                <div><strong className="font-semibold text-gray-800 block">Nível de Urgência:</strong><p className="text-gray-700 capitalize">{selectedDemanda.nivelUrgencia}</p></div>
+                <div><strong className="font-semibold text-gray-800 block">Orçamento Estimado:</strong><p className="text-gray-700">{selectedDemanda.orcamento || 'Não definido'}</p></div>
+                <div><strong className="font-semibold text-gray-800 block">Como Conheceu a ISA:</strong><p className="text-gray-700">{selectedDemanda.comoConheceu || 'Não informado'}</p></div>
+                <div><strong className="font-semibold text-gray-800 block">Disponibilidade para Visita Técnica:</strong><p className="text-gray-700">{selectedDemanda.disponibilidadeVisita ? 'Sim' : 'Não'}</p></div>
+                <div><strong className="font-semibold text-gray-800 block">Consentimento LGPD:</strong><p className="text-gray-700">{selectedDemanda.consentimentoLGPD ? 'Concedido' : 'Não Concedido'}</p></div>
               </div>
             </div>
           </div>

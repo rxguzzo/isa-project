@@ -9,8 +9,12 @@ export async function POST(request: Request) {
   try {
     const { nome, email, senha } = await request.json();
 
+    // Validações no Backend
     if (!nome || !email || !senha) {
       return NextResponse.json({ message: 'Nome, e-mail e senha são obrigatórios.' }, { status: 400 });
+    }
+    if (senha.length < 8) {
+      return NextResponse.json({ message: 'A senha deve ter pelo menos 8 caracteres.' }, { status: 400 });
     }
 
     const existingUser = await prisma.usuario.findUnique({ where: { email } });
@@ -25,11 +29,10 @@ export async function POST(request: Request) {
         nome,
         email,
         senha: hashedPassword,
-        role: 'USER', // Novos usuários por cadastro são 'USER' por padrão
+        role: 'USER',
       },
     });
 
-    // Não retorna a senha hash
     const { senha: _, ...usuarioSemSenha } = novoUsuario;
     return NextResponse.json(usuarioSemSenha, { status: 201 });
 

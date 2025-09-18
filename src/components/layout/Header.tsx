@@ -35,7 +35,7 @@ export function Header() {
             href="/cadastro"
             className="rounded-md bg-[#b91c1c] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#991b1b]"
           >
-            Cadastrar Empresa
+            Cadastrar
           </Link>
         </div>
       </div>

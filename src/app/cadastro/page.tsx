@@ -1,13 +1,48 @@
 // src/app/cadastro/page.tsx
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, ChangeEventHandler, ElementType } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { PanelTopOpen, User, Mail, Lock } from 'lucide-react';
+import { Chrome } from 'lucide-react';
+
+// ===================================================================
+// ===== MUDANÇA CRÍTICA: Definindo o tipo e o componente FORA =====
+// ===================================================================
+
+// 1. Definindo um tipo para as propriedades do nosso componente de Input
+type InputFieldProps = {
+  icon: ElementType;
+  name: string;
+  type: string;
+  placeholder: string;
+  value: string;
+  onChange: ChangeEventHandler<HTMLInputElement>;
+};
+
+// 2. Componente reutilizável de InputField agora usa a tipagem correta
+const InputField = ({ icon: Icon, name, type, placeholder, value, onChange }: InputFieldProps) => (
+  <div className="relative">
+    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+      <Icon className="h-5 w-5 text-gray-400" />
+    </div>
+    <input
+      name={name}
+      type={type}
+      placeholder={placeholder}
+      required
+      value={value}
+      onChange={onChange}
+      className="w-full rounded-md border border-gray-300 bg-gray-50 py-2 pl-10 pr-3 text-gray-800 transition-colors focus:border-[#b91c1c] focus:outline-none focus:ring-2 focus:ring-[#fecaca]"
+    />
+  </div>
+);
 
 export default function PaginaCadastro() {
-  const [form, setForm] = useState({ nome: '', email: '', senha: '' });
+  const [form, setForm] = useState({ nome: '', email: '', senha: '', confirmarSenha: '' });
   const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -16,13 +51,25 @@ export default function PaginaCadastro() {
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    setMessage('');
+    
+    if (form.senha !== form.confirmarSenha) {
+      setMessage('As senhas não coincidem.');
+      return;
+    }
+    if (form.senha.length < 8) {
+      setMessage('A senha deve ter pelo menos 8 caracteres.');
+      return;
+    }
+
+    setIsSubmitting(true);
     setMessage('Cadastrando...');
 
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ nome: form.nome, email: form.email, senha: form.senha }),
       });
 
       const data = await response.json();
@@ -34,41 +81,86 @@ export default function PaginaCadastro() {
         }, 2000);
       } else {
         setMessage(data.message || 'Erro no cadastro. Tente novamente.');
+        setIsSubmitting(false);
       }
     } catch (error) {
-      console.error('Erro de rede ou no servidor:', error);
       setMessage('Erro de conexão. Verifique sua rede.');
+      setIsSubmitting(false);
     }
   };
 
+  const handleGoogleSignUp = () => {
+    alert('Funcionalidade de cadastro com Google a ser implementada!');
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
-        <h1 className="mb-6 text-center text-3xl font-bold text-gray-800">Criar Sua Conta ISA</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="nome" className="block text-sm font-medium text-gray-700">Nome Completo</label>
-            <input id="nome" name="nome" type="text" required value={form.nome} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm" />
-          </div>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">E-mail</label>
-            <input id="email" name="email" type="email" required value={form.email} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm" />
-          </div>
-          <div>
-            <label htmlFor="senha" className="block text-sm font-medium text-gray-700">Senha</label>
-            <input id="senha" name="senha" type="password" required value={form.senha} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm" />
-          </div>
-          <button type="submit" className="w-full rounded-md bg-[#b91c1c] py-2 px-4 text-sm font-semibold text-white hover:bg-[#991b1b] focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
-            Cadastrar
-          </button>
-        </form>
-        {message && <p className="mt-4 text-center text-sm">{message}</p>}
-        <p className="mt-4 text-center text-sm text-gray-600">
-          Já tem uma conta?{' '}
-          <Link href="/login" className="font-medium text-[#b91c1c] hover:text-[#991b1b]">
-            Faça login
+    <div className="grid min-h-screen w-full lg:grid-cols-2">
+      {/* Painel Esquerdo de Branding */}
+      <div
+        className="relative hidden lg:flex flex-col items-center justify-center bg-gray-50 p-8 text-center"
+        style={{
+          backgroundImage: 'radial-gradient(#d1d5db 1px, transparent 1px)',
+          backgroundSize: '1.5rem 1.5rem',
+        }}
+      >
+        <div className="relative z-10">
+          <Link href="/" className="flex items-center justify-center gap-2 mb-8">
+            <PanelTopOpen className="h-8 w-8 text-[#b91c1c]" />
+            <span className="text-3xl font-bold text-gray-800 font-display">ISA</span>
           </Link>
-        </p>
+          <h1 className="text-5xl font-bold leading-tight text-gray-900 font-display">
+            Crie sua Conta
+          </h1>
+          <p className="mt-4 max-w-sm text-lg text-gray-600">
+            Junte-se à nossa plataforma e otimize a gestão da sua empresa.
+          </p>
+        </div>
+      </div>
+      
+      {/* Painel Direito com Formulário */}
+      <div className="flex items-center justify-center bg-white p-6 sm:p-12">
+        <div className="w-full max-w-md">
+          <h1 className="text-3xl font-bold mb-2 text-gray-800 font-display">Registre-se</h1>
+          <p className="mb-6 text-gray-500">Comece a transformar sua gestão hoje mesmo.</p>
+          
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <InputField icon={User} name="nome" type="text" placeholder="Nome Completo" value={form.nome} onChange={handleChange} />
+            <InputField icon={Mail} name="email" type="email" placeholder="E-mail" value={form.email} onChange={handleChange} />
+            <InputField icon={Lock} name="senha" type="password" placeholder="Senha (mínimo 8 caracteres)" value={form.senha} onChange={handleChange} />
+            <InputField icon={Lock} name="confirmarSenha" type="password" placeholder="Confirmar Senha" value={form.confirmarSenha} onChange={handleChange} />
+            
+            <button
+              type="submit"
+              className="w-full rounded-md bg-[#b91c1c] py-3 px-4 text-white font-semibold shadow-lg transition-all hover:bg-[#991b1b] disabled:opacity-70"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Processando...' : 'Criar Conta'}
+            </button>
+          </form>
+
+          {message && <p className={`mt-4 text-center text-sm ${message.includes('Erro') || message.includes('não coincidem') ? 'text-red-600' : 'text-green-600'}`}>{message}</p>}
+          
+          <div className="my-6 flex items-center">
+            <div className="flex-grow border-t border-gray-300"></div>
+            <span className="mx-4 flex-shrink text-sm text-gray-500">OU</span>
+            <div className="flex-grow border-t border-gray-300"></div>
+          </div>
+          
+          <button
+            onClick={handleGoogleSignUp}
+            className="w-full flex items-center justify-center gap-3 rounded-md border border-gray-300 bg-white py-3 px-4 text-gray-700 font-semibold shadow-sm transition-all hover:bg-gray-50"
+          >
+            <Chrome className="h-5 w-5" />
+            Cadastrar-se com o Google
+          </button>
+
+          <p className="mt-8 text-center text-sm text-gray-600">
+            Já possui uma conta?{' '}
+            <Link href="/login" className="font-semibold text-[#b91c1c] hover:underline">
+              Faça login
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
