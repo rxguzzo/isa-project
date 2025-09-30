@@ -1,5 +1,4 @@
 // prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,32 +13,35 @@ model Usuario {
   nome      String
   email     String    @unique
   senha     String
-  role      String    @default("USER") // Papel: 'USER' ou 'ADMIN'
+  role      String    @default("USER")
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  empresaId String?
-  empresa   Empresa?  @relation(fields: [empresaId], references: [id])
+  // Relação: Um usuário pode possuir VÁRIAS empresas
+  empresas  Empresa[]
 }
 
 model Empresa {
-  id           String     @id @default(uuid())
-  razaoSocial  String     @unique
+  id           String    @id @default(uuid())
+  razaoSocial  String
   nomeFantasia String?
-  cnpj         String     @unique
+  cnpj         String    @unique
   endereco     String?
   telefone     String?
   emailContato String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   problemas    Problema[]
-  usuarios     Usuario[] // Uma empresa pode ter vários usuários
+
+  // Relação: Cada empresa pertence a UM e somente UM usuário
+  usuarioId    String
+  usuario      Usuario   @relation(fields: [usuarioId], references: [id])
 }
 
 model Problema {
   id                      String    @id @default(uuid())
-  areaDemanda             String[]  // Corrigido para usar o poder do PostgreSQL
+  areaDemanda             String[]
   assunto                 String
   descricao               String
   objetivos               String?
@@ -57,11 +59,11 @@ model Problema {
 }
 
 model ConfiguracaoGlobal {
-  id                      String    @id @default(uuid())
-  notificacoesAtivas      Boolean   @default(true)
-  modoManutencao          Boolean   @default(false)
-  mensagemBoasVindas      String?
-  minVersaoAppRequerida   String?
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
+  id                     String    @id @default(uuid())
+  notificacoesAtivas     Boolean   @default(true)
+  modoManutencao         Boolean   @default(false)
+  mensagemBoasVindas     String?
+  minVersaoAppRequerida  String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 }

@@ -6,10 +6,7 @@ import { headers } from 'next/headers';
 const prisma = new PrismaClient();
 
 export async function GET(request: Request, context: { params: { empresaId: string } }) {
-  // Pegamos o ID da empresa diretamente dos parâmetros da URL
   const { empresaId } = context.params;
-  
-  // Pegamos o ID do usuário que o middleware já validou e injetou
   const usuarioId = (await headers()).get('x-user-id');
 
   if (!usuarioId) {
@@ -17,16 +14,11 @@ export async function GET(request: Request, context: { params: { empresaId: stri
   }
 
   try {
-    // Verificação de Segurança: Garante que a empresa que queremos ver
-    // realmente pertence ao usuário que está logado.
+    // Validação de Segurança: Garante que a empresa pertence ao usuário logado
     const empresaDoUsuario = await prisma.empresa.findFirst({
       where: { 
         id: empresaId, 
-        usuarios: {
-          some: {
-            id: usuarioId,
-          }
-        } 
+        usuarioId: usuarioId,
       }
     });
 
@@ -34,7 +26,7 @@ export async function GET(request: Request, context: { params: { empresaId: stri
       return NextResponse.json({ message: 'Acesso negado a esta empresa.' }, { status: 403 });
     }
 
-    // Se a verificação passou, busca os problemas associados a essa empresa
+    // Se a permissão estiver correta, busca os problemas da empresa
     const problemas = await prisma.problema.findMany({
       where: { empresaId: empresaId },
       orderBy: { createdAt: 'desc' },
@@ -46,3 +38,4 @@ export async function GET(request: Request, context: { params: { empresaId: stri
     return NextResponse.json({ message: 'Erro ao buscar demandas.' }, { status: 500 });
   }
 }
+

@@ -13,18 +13,9 @@ export async function GET() {
   }
 
   try {
-    // Busca todas as empresas onde o ID do usuário corresponde
     const empresas = await prisma.empresa.findMany({
-      where: {
-        usuarios: {
-          some: {
-            id: usuarioId,
-          },
-        },
-      },
-      orderBy: {
-        razaoSocial: 'asc',
-      },
+      where: { usuarioId: usuarioId },
+      orderBy: { razaoSocial: 'asc' },
     });
 
     return NextResponse.json(empresas);

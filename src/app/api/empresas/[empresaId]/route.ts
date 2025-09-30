@@ -5,38 +5,53 @@ import { headers } from 'next/headers';
 
 const prisma = new PrismaClient();
 
+// Função auxiliar para verificar se o usuário é o dono da empresa
+async function checkUserAccessToCompany(empresaId: string, userId: string) {
+  const empresa = await prisma.empresa.findFirst({
+    where: { id: empresaId, usuarioId: userId },
+  });
+  return !!empresa;
+}
+
 export async function GET(request: Request, context: { params: { empresaId: string } }) {
   const { empresaId } = context.params;
   const usuarioId = (await headers()).get('x-user-id');
+  if (!usuarioId) return NextResponse.json({ message: 'Não autorizado.' }, { status: 401 });
 
-  if (!usuarioId) {
-    return NextResponse.json({ message: 'Não autorizado' }, { status: 401 });
-  }
+  const temAcesso = await checkUserAccessToCompany(empresaId, usuarioId);
+  if (!temAcesso) return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 });
 
-  try {
-    const empresa = await prisma.empresa.findFirst({
-      where: {
-        id: empresaId,
-        usuarios: {
-          some: {
-            id: usuarioId,
-          },
-        },
-      },
-      select: {
-        id: true,
-        razaoSocial: true,
-        cnpj: true,
-      },
-    });
+  const empresa = await prisma.empresa.findUnique({ where: { id: empresaId } });
+  return NextResponse.json(empresa);
+}
 
-    if (!empresa) {
-      return NextResponse.json({ message: 'Empresa não encontrada ou não pertence a este usuário' }, { status: 404 });
-    }
+export async function PUT(request: Request, context: { params: { empresaId: string } }) {
+  const { empresaId } = context.params;
+  const usuarioId = (await headers()).get('x-user-id');
+  if (!usuarioId) return NextResponse.json({ message: 'Não autorizado.' }, { status: 401 });
 
-    return NextResponse.json(empresa);
-  } catch (error) {
-    console.error("Erro ao buscar detalhes da empresa:", error);
-    return NextResponse.json({ message: 'Erro interno do servidor' }, { status: 500 });
-  }
+  const temAcesso = await checkUserAccessToCompany(empresaId, usuarioId);
+  if (!temAcesso) return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 });
+
+  const body = await request.json();
+  const updatedEmpresa = await prisma.empresa.update({
+    where: { id: empresaId },
+    data: body,
+  });
+  return NextResponse.json(updatedEmpresa);
+}
+
+export async function DELETE(request: Request, context: { params: { empresaId: string } }) {
+  const { empresaId } = context.params;
+  const usuarioId = (await headers()).get('x-user-id');
+  if (!usuarioId) return NextResponse.json({ message: 'Não autorizado.' }, { status: 401 });
+
+  const temAcesso = await checkUserAccessToCompany(empresaId, usuarioId);
+  if (!temAcesso) return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 });
+
+  await prisma.$transaction(async (tx) => {
+    await tx.problema.deleteMany({ where: { empresaId: empresaId } });
+    await tx.empresa.delete({ where: { id: empresaId } });
+  });
+  return NextResponse.json({ message: 'Empresa deletada com sucesso.' });
 }
