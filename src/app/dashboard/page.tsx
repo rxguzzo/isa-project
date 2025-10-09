@@ -88,7 +88,7 @@ export default function SeletorDeEmpresasPage() {
           <span className="text-xl font-bold text-gray-800 font-display">ISA</span>
           {/* 2. Adicione um contêiner para os botões */}
           <div className="flex items-center gap-2">
-            <Link href="/dashboard/configuracoes" className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100">
+            <Link href="/dashboard/configuracoes-usuario" className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100">
               <Settings className="h-4 w-4" />
               <span>Configurações</span>
             </Link>

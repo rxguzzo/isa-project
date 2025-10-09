@@ -1,69 +1,76 @@
 // prisma/schema.prisma
+// Define o gerador do cliente Prisma, que será usado para interagir com o banco de dados via código
 generator client {
   provider = "prisma-client-js"
 }
 
+// Define a fonte de dados, especificando o provedor do banco de dados e a URL de conexão.
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
+// Modelo de dados para o sistema de gerenciamento de empresas e problemas
+// Usuarios podem ter várias empresas, e cada empresa pode ter vários problemas associados.
 model Usuario {
-  id        String    @id @default(uuid())
+  id        String   @id @default(uuid())
   nome      String
-  email     String    @unique
+  email     String   @unique
   senha     String
-  role      String    @default("USER")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  role      String   @default("USER")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relação: Um usuário pode possuir VÁRIAS empresas
-  empresas  Empresa[]
+  empresas Empresa[]
 }
 
+// Entidade Empresa com seus atributos e relação com Usuario e Problema
 model Empresa {
-  id           String    @id @default(uuid())
+  id           String   @id @default(uuid())
   razaoSocial  String
   nomeFantasia String?
-  cnpj         String    @unique
+  cnpj         String   @unique
   endereco     String?
   telefone     String?
   emailContato String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  problemas    Problema[]
+  problemas Problema[]
 
   // Relação: Cada empresa pertence a UM e somente UM usuário
-  usuarioId    String
-  usuario      Usuario   @relation(fields: [usuarioId], references: [id])
+  usuarioId String
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
 }
 
+// Entidade Problema com seus atributos e relação com Empresa
 model Problema {
-  id                      String    @id @default(uuid())
-  areaDemanda             String[]
-  assunto                 String
-  descricao               String
-  objetivos               String?
-  nivelUrgencia           String
-  orcamento               String?
-  comoConheceu            String?
-  consentimentoLGPD       Boolean   @default(false)
-  disponibilidadeVisita   Boolean   @default(false)
-  status                  String    @default("aberto")
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
+  id                    String   @id @default(uuid())
+  areaDemanda           String[]
+  assunto               String
+  descricao             String
+  objetivos             String?
+  nivelUrgencia         String
+  orcamento             String?
+  comoConheceu          String?
+  consentimentoLGPD     Boolean  @default(false)
+  disponibilidadeVisita Boolean  @default(false)
+  status                String   @default("aberto")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
-  empresaId               String
-  empresa                 Empresa   @relation(fields: [empresaId], references: [id])
+  empresaId String
+  empresa   Empresa @relation(fields: [empresaId], references: [id])
 }
 
+// Entidade para armazenar configurações globais do sistema
 model ConfiguracaoGlobal {
-  id                     String    @id @default(uuid())
-  notificacoesAtivas     Boolean   @default(true)
-  modoManutencao         Boolean   @default(false)
-  mensagemBoasVindas     String?
-  minVersaoAppRequerida  String?
-  createdAt              DateTime  @default(now())
-  updatedAt              DateTime  @updatedAt
+  id                    String   @id @default(uuid())
+  notificacoesAtivas    Boolean  @default(true)
+  modoManutencao        Boolean  @default(false)
+  mensagemBoasVindas    String?
+  minVersaoAppRequerida String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
