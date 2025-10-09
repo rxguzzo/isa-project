@@ -1,31 +1,46 @@
 // src/app/api/auth/me/route.ts
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { headers } from 'next/headers'; // Importa a função headers
+import { headers } from 'next/headers';
 
 const prisma = new PrismaClient();
 
 export async function GET(request: Request) {
-  const headersList = await headers(); // <<<--- CORREÇÃO AQUI: ADICIONAR 'await'
-  const empresaId = headersList.get('x-user-id');
+  // Esta rota deve retornar os dados do USUÁRIO logado, não da empresa
+  const usuarioId = (await headers()).get('x-user-id');
 
-  if (!empresaId) {
-    // Se o middleware não enviou o ID, algo está errado na cadeia de autenticação
-    return NextResponse.json({ message: 'Acesso negado: ID da empresa não encontrado.' }, { status: 403 });
+  if (!usuarioId) {
+    return NextResponse.json({ message: 'Acesso negado: ID de usuário não encontrado.' }, { status: 403 });
   }
 
   try {
-    const empresa = await prisma.empresa.findUnique({
-      where: { id: empresaId },
-      select: { id: true, razaoSocial: true, email: true, nomeResponsavel: true, telefone: true },
+    // Buscamos o USUÁRIO pelo ID fornecido pelo middleware
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: usuarioId },
+      // Selecionamos os campos que queremos retornar (sem a senha!)
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        role: true,
+        // Se quisermos as empresas dele, podemos incluir aqui
+        empresas: {
+          select: {
+            id: true,
+            razaoSocial: true,
+          }
+        }
+      },
     });
 
-    if (!empresa) {
-      return NextResponse.json({ message: 'Empresa não encontrada.' }, { status: 404 });
+    if (!usuario) {
+      return NextResponse.json({ message: 'Usuário não encontrado.' }, { status: 404 });
     }
-    return NextResponse.json(empresa);
+    
+    // Retornamos os dados do USUÁRIO
+    return NextResponse.json(usuario);
   } catch (error) {
     console.error("Erro na API /api/auth/me:", error);
-    return NextResponse.json({ message: 'Erro interno do servidor ao buscar dados da empresa.' }, { status: 500 });
+    return NextResponse.json({ message: 'Erro interno do servidor ao buscar dados do usuário.' }, { status: 500 });
   }
 }

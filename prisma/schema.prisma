@@ -9,6 +9,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// =======================================================
+// Modelo: Usuario
+// Relação: Um usuário pode ter VÁRIAS empresas
+// =======================================================
 model Usuario {
   id        String    @id @default(uuid())
   nome      String
@@ -18,50 +22,70 @@ model Usuario {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  empresaId String?
-  empresa   Empresa?  @relation(fields: [empresaId], references: [id])
+  // Um usuário pode possuir várias empresas.
+  // A chave estrangeira (usuarioId) está no modelo Empresa.
+  empresas  Empresa[]
 }
 
+// =======================================================
+// Modelo: Empresa
+// Relação: Cada empresa pertence a UM ÚNICO usuário
+//          Cada empresa pode ter MÚLTIPLOS problemas
+// =======================================================
 model Empresa {
-  id           String     @id @default(uuid())
-  razaoSocial  String     @unique
+  id           String    @id @default(uuid())
+  razaoSocial  String    @unique
   nomeFantasia String?
-  cnpj         String     @unique
+  cnpj         String    @unique
   endereco     String?
   telefone     String?
   emailContato String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
+  // Relação com Problema: Uma empresa pode ter muitos problemas
   problemas    Problema[]
-  usuarios     Usuario[] // Uma empresa pode ter vários usuários
+
+  // Relação com Usuario: Cada empresa pertence a UM usuário.
+  // Este é o campo da chave estrangeira que aponta para o ID do usuário dono.
+  usuarioId    String
+  usuario      Usuario   @relation(fields: [usuarioId], references: [id])
 }
 
+// =======================================================
+// Modelo: Problema (Demanda)
+// Relação: Cada problema pertence a UMA ÚNICA empresa
+// =======================================================
 model Problema {
-  id                      String    @id @default(uuid())
-  areaDemanda             String[]  // Corrigido para usar o poder do PostgreSQL
-  assunto                 String
-  descricao               String
-  objetivos               String?
-  nivelUrgencia           String
-  orcamento               String?
-  comoConheceu            String?
-  consentimentoLGPD       Boolean   @default(false)
-  disponibilidadeVisita   Boolean   @default(false)
-  status                  String    @default("aberto")
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
+  id                    String    @id @default(uuid())
+  areaDemanda           String[]  // Corrigido para usar o poder do PostgreSQL (array de strings)
+  assunto               String
+  descricao             String
+  objetivos             String?
+  nivelUrgencia         String
+  orcamento             String?
+  comoConheceu          String?
+  consentimentoLGPD     Boolean   @default(false)
+  disponibilidadeVisita Boolean   @default(false)
+  status                String    @default("aberto")
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
-  empresaId               String
-  empresa                 Empresa   @relation(fields: [empresaId], references: [id])
+  // Relação com Empresa: Cada problema pertence a UMA empresa
+  empresaId             String
+  empresa               Empresa   @relation(fields: [empresaId], references: [id])
 }
 
+// =======================================================
+// Modelo: ConfiguracaoGlobal
+// (Este modelo é independente dos outros)
+// =======================================================
 model ConfiguracaoGlobal {
-  id                      String    @id @default(uuid())
-  notificacoesAtivas      Boolean   @default(true)
-  modoManutencao          Boolean   @default(false)
-  mensagemBoasVindas      String?
-  minVersaoAppRequerida   String?
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
+  id                     String    @id @default(uuid())
+  notificacoesAtivas     Boolean   @default(true)
+  modoManutencao         Boolean   @default(false)
+  mensagemBoasVindas     String?
+  minVersaoAppRequerida  String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 }

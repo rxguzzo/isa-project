@@ -5,30 +5,32 @@ import { headers } from 'next/headers';
 
 const prisma = new PrismaClient();
 
-// Função auxiliar para verificar permissão
-async function checkAdminPermission() {
+// Função auxiliar para verificar se o usuário é Admin
+async function isAdmin() {
   const userRole = (await headers()).get('x-user-role');
-  if (userRole !== 'ADMIN') {
-    return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 });
-  }
-  return null;
+  return userRole === 'ADMIN';
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
-  const permissionError = await checkAdminPermission();
-  if (permissionError) return permissionError;
+// =======================================================
+// Rota GET: Buscar uma única empresa pelo ID (para o admin)
+// =======================================================
+export async function GET(request: Request, context: { params: { id: string } }) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 });
+  }
 
-  const { id } = params;
+  const { id } = context.params;
   try {
     const empresa = await prisma.empresa.findUnique({
       where: { id },
+      // CORREÇÃO AQUI: Trocado 'usuarios' por 'usuario'
+      // Inclui o usuário dono da empresa
       include: {
-        usuarios: {
+        usuario: {
           select: {
             id: true,
             nome: true,
             email: true,
-            role: true,
           },
         },
       },
@@ -40,49 +42,67 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
     return NextResponse.json(empresa);
   } catch (error) {
-    console.error("Erro ao buscar empresa:", error);
+    console.error(`Erro ao buscar empresa ${id}:`, error);
     return NextResponse.json({ message: 'Erro interno do servidor.' }, { status: 500 });
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
-  const permissionError = await checkAdminPermission();
-  if (permissionError) return permissionError;
+// =======================================================
+// Rota PUT: Atualizar os dados de uma empresa (para o admin)
+// =======================================================
+export async function PUT(request: Request, context: { params: { id: string } }) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 });
+  }
 
-  const { id } = params;
+  const { id } = context.params;
   try {
     const body = await request.json();
+    
+    // Remove campos que não devem ser atualizados por esta rota para segurança
+    // Mantenha 'usuarioId' na desestruturação caso o admin queira mudar o dono da empresa
+    const { id: bodyId, createdAt, updatedAt, problemas, ...dataToUpdate } = body;
+
     const updatedEmpresa = await prisma.empresa.update({
       where: { id },
-      data: body,
+      data: dataToUpdate,
     });
     return NextResponse.json(updatedEmpresa);
   } catch (error) {
-    console.error("Erro ao atualizar empresa:", error);
-    return NextResponse.json({ message: 'Erro interno do servidor.' }, { status: 500 });
+    console.error(`Erro ao atualizar empresa ${id}:`, error);
+    return NextResponse.json({ message: 'Erro ao atualizar empresa.' }, { status: 500 });
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-  const permissionError = await checkAdminPermission();
-  if (permissionError) return permissionError;
+// =======================================================
+// Rota DELETE: Excluir uma empresa e seus dados relacionados (para o admin)
+// =======================================================
+export async function DELETE(request: Request, context: { params: { id: string } }) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 });
+  }
 
-  const { id } = params;
+  const { id } = context.params;
   try {
-    // Antes de deletar a empresa, precisamos remover todos os usuários associados a ela
-    // ou reassociá-los, dependendo da sua regra de negócio.
-    // Por simplicidade aqui, vamos deletar usuários também.
-    // Se a sua empresa tiver outras relações (problemas, etc.), você também precisará gerenciá-las.
-    await prisma.usuario.deleteMany({
-      where: { empresaId: id },
+    // Usamos uma transação para garantir que todas as operações sejam bem-sucedidas ou nenhuma seja
+    await prisma.$transaction(async (tx) => {
+      // 1. Deletar todos os problemas associados a esta empresa
+      await tx.problema.deleteMany({
+        where: { empresaId: id },
+      });
+
+      // 2. Deletar a empresa
+      // Como 'usuarioId' na Empresa é um campo obrigatório (não-nulo),
+      // e um Usuario pode ter muitas Empresas, não precisamos atualizar o Usuario.
+      // A Empresa será simplesmente removida, e a lista de 'empresas' do Usuario será atualizada pelo Prisma.
+      await tx.empresa.delete({
+        where: { id },
+      });
     });
 
-    await prisma.empresa.delete({
-      where: { id },
-    });
-    return NextResponse.json({ message: 'Empresa deletada com sucesso.' });
+    return NextResponse.json({ message: 'Empresa e dados relacionados foram deletados com sucesso.' });
   } catch (error) {
-    console.error("Erro ao deletar empresa:", error);
-    return NextResponse.json({ message: 'Erro interno do servidor.' }, { status: 500 });
+    console.error(`Erro ao deletar empresa ${id}:`, error);
+    return NextResponse.json({ message: 'Erro interno do servidor ao deletar empresa.' }, { status: 500 });
   }
 }

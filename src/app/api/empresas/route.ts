@@ -20,34 +20,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Razão Social e CNPJ são obrigatórios.' }, { status: 400 });
     }
 
-    // Limpa o CNPJ para validação e armazenamento (remove pontos, barras, hífens)
     const cleanedCnpj = cnpj.replace(/[^\d]+/g, '');
 
-    // Validação de formato de CNPJ básico (deve conter 14 dígitos e ser apenas numérico)
     if (cleanedCnpj.length !== 14 || !/^\d+$/.test(cleanedCnpj)) {
         return NextResponse.json({ message: 'CNPJ inválido. Deve conter 14 dígitos numéricos.' }, { status: 400 });
     }
 
-    // Verifica se o CNPJ limpo já existe no banco de dados
     const existingCnpj = await prisma.empresa.findUnique({ where: { cnpj: cleanedCnpj } });
     if (existingCnpj) {
       return NextResponse.json({ message: 'Este CNPJ já está cadastrado.' }, { status: 409 });
     }
 
+    // AGORA: Cria a empresa e JÁ ASSOCIA ao usuário logado via 'usuarioId'
     const novaEmpresa = await prisma.empresa.create({
       data: {
         razaoSocial,
         nomeFantasia,
-        cnpj: cleanedCnpj, // Armazena o CNPJ limpo no banco de dados
+        cnpj: cleanedCnpj,
         endereco,
         telefone,
         emailContato,
-        // Conecta a nova empresa ao usuário logado
-        usuarios: {
-          connect: {
-            id: usuarioId,
-          },
-        },
+        usuarioId: usuarioId, // <--- AQUI ESTÁ A MUDANÇA!
       },
     });
 

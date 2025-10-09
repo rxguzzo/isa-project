@@ -13,14 +13,11 @@ export async function GET() {
   }
 
   try {
-    // Busca todas as empresas onde o ID do usuário corresponde
+    // ===== CORREÇÃO AQUI =====
+    // Busca todas as empresas onde a coluna 'usuarioId' corresponde ao usuário logado.
     const empresas = await prisma.empresa.findMany({
       where: {
-        usuarios: {
-          some: {
-            id: usuarioId,
-          },
-        },
+        usuarioId: usuarioId,
       },
       orderBy: {
         razaoSocial: 'asc',

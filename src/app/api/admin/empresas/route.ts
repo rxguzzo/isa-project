@@ -28,20 +28,20 @@ export async function GET(request: NextRequest) {
     const empresas = await prisma.empresa.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      // CORREÇÃO AQUI: Trocado 'usuarios' por 'usuario'
+      // Inclui o usuário dono da empresa
       include: {
-        usuarios: {
-          select: { id: true }, // Contar usuários relacionados
+        usuario: {
+          select: {
+            id: true,
+            nome: true, // Incluímos o nome do usuário dono
+            email: true, // E o email dele
+          },
         },
       },
     });
 
-    // Adiciona um campo de 'totalUsuarios' para cada empresa
-    const empresasComContagem = empresas.map(emp => ({
-      ...emp,
-      totalUsuarios: emp.usuarios.length,
-    }));
-
-    return NextResponse.json(empresasComContagem);
+    return NextResponse.json(empresas);
   } catch (error) {
     console.error("Erro ao buscar empresas para admin:", error);
     return NextResponse.json({ message: 'Erro interno do servidor.' }, { status: 500 });
@@ -50,19 +50,30 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const userRole = (await headers()).get('x-user-role');
-  if (userRole !== 'ADMIN') {
+  const usuarioId = (await headers()).get('x-user-id'); // Precisamos do ID do admin para associar
+
+  if (userRole !== 'ADMIN' || !usuarioId) {
     return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 });
   }
 
   try {
     const body = await request.json();
-    // Validação básica
-    if (!body.razaoSocial || !body.cnpj) {
+    const { razaoSocial, cnpj, ...outrosDados } = body;
+    
+    if (!razaoSocial || !cnpj) {
       return NextResponse.json({ message: 'Razão Social e CNPJ são obrigatórios.' }, { status: 400 });
     }
 
+    const cleanedCnpj = cnpj.replace(/[^\d]+/g, '');
+    // ... (sua outra lógica de validação de CNPJ)
+
     const novaEmpresa = await prisma.empresa.create({
-      data: body,
+      data: {
+        razaoSocial,
+        cnpj: cleanedCnpj,
+        ...outrosDados,
+        usuarioId: usuarioId, // Associa a empresa ao admin que a criou
+      },
     });
 
     return NextResponse.json(novaEmpresa, { status: 201 });

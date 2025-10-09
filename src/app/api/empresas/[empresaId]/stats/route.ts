@@ -1,4 +1,4 @@
-// src/app/api/empresas/[empresaId]/problemas/route.ts
+// src/app/api/empresas/[empresaId]/stats/route.ts
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { headers } from 'next/headers';
@@ -24,18 +24,23 @@ export async function GET(request: Request, context: { params: { empresaId: stri
     });
 
     if (!empresaDoUsuario) {
-      return NextResponse.json({ message: 'Acesso negado a esta empresa.' }, { status: 403 });
+      return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 });
     }
 
-    // Se a verificação passou, busca os problemas associados a essa empresa
-    const problemas = await prisma.problema.findMany({
-      where: { empresaId: empresaId },
-      orderBy: { createdAt: 'desc' },
-    });
+    // Se a verificação passou, calcula as estatísticas
+    const [demandasAbertas, demandasEmAnalise, demandasResolvidas] = await Promise.all([
+      prisma.problema.count({ where: { empresaId: empresaId, status: 'aberto' } }),
+      prisma.problema.count({ where: { empresaId: empresaId, status: 'em análise' } }),
+      prisma.problema.count({ where: { empresaId: empresaId, status: 'resolvido' } }),
+    ]);
 
-    return NextResponse.json(problemas);
+    return NextResponse.json({
+      demandasAbertas,
+      demandasEmAnalise,
+      demandasResolvidas,
+    });
   } catch (error) {
-    console.error(`Erro ao buscar problemas para a empresa ${empresaId}:`, error);
-    return NextResponse.json({ message: 'Erro ao buscar demandas.' }, { status: 500 });
+    console.error(`Erro ao buscar estatísticas para a empresa ${empresaId}:`, error);
+    return NextResponse.json({ message: 'Erro ao buscar estatísticas.' }, { status: 500 });
   }
 }
