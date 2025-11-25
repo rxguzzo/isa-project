@@ -13,15 +13,9 @@ export async function GET() {
   }
 
   try {
-    // ===== CORREÇÃO AQUI =====
-    // Busca todas as empresas onde a coluna 'usuarioId' corresponde ao usuário logado.
     const empresas = await prisma.empresa.findMany({
-      where: {
-        usuarioId: usuarioId,
-      },
-      orderBy: {
-        razaoSocial: 'asc',
-      },
+      where: { usuarioId: usuarioId },
+      orderBy: { razaoSocial: 'asc' },
     });
 
     return NextResponse.json(empresas);

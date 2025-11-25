@@ -1,4 +1,3 @@
-// src/app/api/admin/empresas/[id]/route.ts
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { headers } from 'next/headers';
@@ -23,8 +22,7 @@ export async function GET(request: Request, context: { params: { id: string } })
   try {
     const empresa = await prisma.empresa.findUnique({
       where: { id },
-      // CORREÇÃO AQUI: Trocado 'usuarios' por 'usuario'
-      // Inclui o usuário dono da empresa
+      // CORREÇÃO AQUI: A Empresa tem um 'usuario' (singular) dono.
       include: {
         usuario: {
           select: {
@@ -59,9 +57,8 @@ export async function PUT(request: Request, context: { params: { id: string } })
   try {
     const body = await request.json();
     
-    // Remove campos que não devem ser atualizados por esta rota para segurança
-    // Mantenha 'usuarioId' na desestruturação caso o admin queira mudar o dono da empresa
-    const { id: bodyId, createdAt, updatedAt, problemas, ...dataToUpdate } = body;
+    // Remove campos que não devem ser atualizados diretamente por esta rota para segurança
+    const { id: bodyId, createdAt, updatedAt, usuario, problemas, ...dataToUpdate } = body;
 
     const updatedEmpresa = await prisma.empresa.update({
       where: { id },
@@ -84,17 +81,18 @@ export async function DELETE(request: Request, context: { params: { id: string }
 
   const { id } = context.params;
   try {
-    // Usamos uma transação para garantir que todas as operações sejam bem-sucedidas ou nenhuma seja
+    // Usamos uma transação para garantir que todas as operações sejam bem-sucedidas
     await prisma.$transaction(async (tx) => {
-      // 1. Deletar todos os problemas associados a esta empresa
+      // 1. Deletar todos os problemas (demandas) associados a esta empresa
       await tx.problema.deleteMany({
         where: { empresaId: id },
       });
 
-      // 2. Deletar a empresa
-      // Como 'usuarioId' na Empresa é um campo obrigatório (não-nulo),
-      // e um Usuario pode ter muitas Empresas, não precisamos atualizar o Usuario.
-      // A Empresa será simplesmente removida, e a lista de 'empresas' do Usuario será atualizada pelo Prisma.
+      // 2. CORREÇÃO: A lógica antiga que tentava atualizar 'Usuario' foi removida.
+      // Com a relação 1-para-Muitos, ao deletar a Empresa, a referência na
+      // lista 'empresas' do Usuario é gerenciada automaticamente pelo Prisma.
+
+      // 3. Finalmente, deletar a empresa
       await tx.empresa.delete({
         where: { id },
       });
@@ -106,3 +104,4 @@ export async function DELETE(request: Request, context: { params: { id: string }
     return NextResponse.json({ message: 'Erro interno do servidor ao deletar empresa.' }, { status: 500 });
   }
 }
+

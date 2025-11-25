@@ -14,12 +14,11 @@ export async function GET(request: Request, context: { params: { empresaId: stri
   }
 
   try {
-    // ===== CORREÇÃO AQUI =====
-    // Verificação de Segurança para a relação "1 Usuário para Muitas Empresas"
+    // Validação de Segurança: Garante que a empresa pertence ao usuário logado
     const empresaDoUsuario = await prisma.empresa.findFirst({
       where: { 
         id: empresaId, 
-        usuarioId: usuarioId, // Verifica se o usuarioId da empresa é o mesmo do usuário logado
+        usuarioId: usuarioId,
       }
     });
 
@@ -27,7 +26,7 @@ export async function GET(request: Request, context: { params: { empresaId: stri
       return NextResponse.json({ message: 'Acesso negado a esta empresa.' }, { status: 403 });
     }
 
-    // Se a verificação passou, busca os problemas associados a essa empresa
+    // Se a permissão estiver correta, busca os problemas da empresa
     const problemas = await prisma.problema.findMany({
       where: { empresaId: empresaId },
       orderBy: { createdAt: 'desc' },
@@ -39,3 +38,4 @@ export async function GET(request: Request, context: { params: { empresaId: stri
     return NextResponse.json({ message: 'Erro ao buscar demandas.' }, { status: 500 });
   }
 }
+

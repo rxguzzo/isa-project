@@ -1,4 +1,3 @@
-// src/app/api/admin/empresas/route.ts
 import { NextResponse, NextRequest } from 'next/server';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { headers } from 'next/headers';
@@ -29,13 +28,13 @@ export async function GET(request: NextRequest) {
       where,
       orderBy: { createdAt: 'desc' },
       // CORREÇÃO AQUI: Trocado 'usuarios' por 'usuario'
-      // Inclui o usuário dono da empresa
+      // Inclui o usuário único que é o dono da empresa
       include: {
         usuario: {
           select: {
             id: true,
-            nome: true, // Incluímos o nome do usuário dono
-            email: true, // E o email dele
+            nome: true,
+            email: true,
           },
         },
       },
@@ -72,7 +71,7 @@ export async function POST(request: NextRequest) {
         razaoSocial,
         cnpj: cleanedCnpj,
         ...outrosDados,
-        usuarioId: usuarioId, // Associa a empresa ao admin que a criou
+        usuarioId: usuarioId, // Associa a nova empresa ao admin que a criou
       },
     });
 
@@ -82,3 +81,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: 'Erro interno ao criar empresa.' }, { status: 500 });
   }
 }
+
