@@ -1,7 +1,6 @@
 // src/components/home/TestimonialsSection.tsx
 'use client';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
 import { Star } from 'lucide-react';
 
 export function TestimonialsSection() {
@@ -56,7 +55,7 @@ export function TestimonialsSection() {
               <div className="flex text-[#b91c1c] mb-4"> 
                 {[...Array(5)].map((_, i) => <Star key={i} fill="currentColor" />)}
               </div>
-              <p className="mb-6 text-gray-600 text-left italic">"{testimonial.quote}"</p>
+              <p className="mb-6 text-gray-600 text-left italic">&ldquo;{testimonial.quote}&rdquo;</p>
               <div className="flex items-center">
                 {/* Removi o <Image> por padrão para evitar erros se você ainda não tem as imagens */}
                 {/* Se tiver as imagens, descomente e ajuste o caminho se necessário */}

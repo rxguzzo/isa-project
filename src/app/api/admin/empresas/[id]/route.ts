@@ -13,12 +13,12 @@ async function isAdmin() {
 // =======================================================
 // Rota GET: Buscar uma única empresa pelo ID (para o admin)
 // =======================================================
-export async function GET(request: Request, context: { params: { id: string } }) {
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   if (!(await isAdmin())) {
     return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 });
   }
 
-  const { id } = context.params;
+  const { id } = await context.params;
   try {
     const empresa = await prisma.empresa.findUnique({
       where: { id },
@@ -48,12 +48,12 @@ export async function GET(request: Request, context: { params: { id: string } })
 // =======================================================
 // Rota PUT: Atualizar os dados de uma empresa (para o admin)
 // =======================================================
-export async function PUT(request: Request, context: { params: { id: string } }) {
+export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
   if (!(await isAdmin())) {
     return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 });
   }
 
-  const { id } = context.params;
+  const { id } = await context.params;
   try {
     const body = await request.json();
     
@@ -74,12 +74,12 @@ export async function PUT(request: Request, context: { params: { id: string } })
 // =======================================================
 // Rota DELETE: Excluir uma empresa e seus dados relacionados (para o admin)
 // =======================================================
-export async function DELETE(request: Request, context: { params: { id: string } }) {
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
   if (!(await isAdmin())) {
     return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 });
   }
 
-  const { id } = context.params;
+  const { id } = await context.params;
   try {
     // Usamos uma transação para garantir que todas as operações sejam bem-sucedidas
     await prisma.$transaction(async (tx) => {

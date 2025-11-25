@@ -1,0 +1,15 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="80" fill="#b91c1c"/>
+  <g transform="translate(128, 128)">
+    <!-- I -->
+    <rect x="30" y="40" width="20" height="160" fill="white"/>
+    <rect x="10" y="40" width="60" height="20" fill="white"/>
+    <rect x="10" y="180" width="60" height="20" fill="white"/>
+    
+    <!-- S -->
+    <path d="M100 40 H160 V60 H120 V90 H160 V110 H100 V140 H160 V160 H100 Q90 160 90 150 V50 Q90 40 100 40" fill="white"/>
+    
+    <!-- A -->
+    <path d="M200 160 L180 160 L185 140 L215 140 L220 160 L240 160 L220 40 L180 40 Z M190 120 L210 120 L205 100 Z" fill="white"/>
+  </g>
+</svg>

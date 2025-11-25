@@ -2,28 +2,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import Link from "next/link";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  Legend,
-  Cell,
-} from "recharts";
 import {
   Building2,
   FileText,
   Clock,
   CheckCircle,
   ChevronRight,
-  Settings,
-} from "lucide-react"; // Removido UserRoundCog duplicado, adicionado Settings
+} from "lucide-react";
 import { StatCard } from "@/components/admin/StatCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -52,7 +39,7 @@ export default function AdminDashboardPage() {
     []
   );
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
+  
   // Dados formatados para o gráfico
   const chartData = [
     {
@@ -110,7 +97,6 @@ export default function AdminDashboardPage() {
       }
     };
     fetchAdminData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Dependências ajustadas
 
   // Removemos o handleLogout direto daqui, pois ele já está no AdminLayout.

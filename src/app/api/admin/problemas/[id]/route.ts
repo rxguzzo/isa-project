@@ -7,14 +7,14 @@ const prisma = new PrismaClient();
 
 export async function PUT(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const userRole = (await headers()).get('x-user-role');
   if (userRole !== 'ADMIN') {
     return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 });
   }
 
-  const { id } = context.params;
+  const { id } = await context.params;
   try {
     const { status } = await request.json();
 

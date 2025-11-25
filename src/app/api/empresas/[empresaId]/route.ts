@@ -13,8 +13,8 @@ async function checkUserAccessToCompany(empresaId: string, userId: string) {
   return !!empresa;
 }
 
-export async function GET(request: Request, context: { params: { empresaId: string } }) {
-  const { empresaId } = context.params;
+export async function GET(request: Request, context: { params: Promise<{ empresaId: string }> }) {
+  const { empresaId } = await context.params;
   const usuarioId = (await headers()).get('x-user-id');
   if (!usuarioId) return NextResponse.json({ message: 'Não autorizado.' }, { status: 401 });
 
@@ -25,8 +25,8 @@ export async function GET(request: Request, context: { params: { empresaId: stri
   return NextResponse.json(empresa);
 }
 
-export async function PUT(request: Request, context: { params: { empresaId: string } }) {
-  const { empresaId } = context.params;
+export async function PUT(request: Request, context: { params: Promise<{ empresaId: string }> }) {
+  const { empresaId } = await context.params;
   const usuarioId = (await headers()).get('x-user-id');
   if (!usuarioId) return NextResponse.json({ message: 'Não autorizado.' }, { status: 401 });
 
@@ -41,8 +41,8 @@ export async function PUT(request: Request, context: { params: { empresaId: stri
   return NextResponse.json(updatedEmpresa);
 }
 
-export async function DELETE(request: Request, context: { params: { empresaId: string } }) {
-  const { empresaId } = context.params;
+export async function DELETE(request: Request, context: { params: Promise<{ empresaId: string }> }) {
+  const { empresaId } = await context.params;
   const usuarioId = (await headers()).get('x-user-id');
   if (!usuarioId) return NextResponse.json({ message: 'Não autorizado.' }, { status: 401 });
 

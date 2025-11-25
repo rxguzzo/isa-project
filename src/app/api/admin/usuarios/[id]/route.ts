@@ -13,12 +13,12 @@ async function isAdmin() {
 // =======================================================
 // Rota PUT: Atualizar os dados de um usuário
 // =======================================================
-export async function PUT(request: Request, context: { params: { id: string } }) {
+export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
   if (!(await isAdmin())) {
     return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 });
   }
 
-  const { id } = context.params;
+  const { id } = await context.params;
   try {
     const { nome, email, role, senha } = await request.json();
     
@@ -47,12 +47,12 @@ export async function PUT(request: Request, context: { params: { id: string } })
 // =======================================================
 // Rota DELETE: Deletar um usuário
 // =======================================================
-export async function DELETE(request: Request, context: { params: { id: string } }) {
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
   if (!(await isAdmin())) {
     return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 });
   }
 
-  const { id } = context.params;
+  const { id } = await context.params;
   try {
     // Lógica de segurança para não permitir que o admin se auto-delete
     const currentUserId = (await headers()).get('x-user-id');

@@ -5,8 +5,8 @@ import { headers } from 'next/headers';
 
 const prisma = new PrismaClient();
 
-export async function GET(request: Request, context: { params: { empresaId: string } }) {
-  const { empresaId } = context.params;
+export async function GET(request: Request, context: { params: Promise<{ empresaId: string }> }) {
+  const { empresaId } = await context.params;
   const usuarioId = (await headers()).get('x-user-id');
 
   if (!usuarioId) {
