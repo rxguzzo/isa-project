@@ -4,11 +4,6 @@ import { Poppins, Lato } from "next/font/google"; // <-- 1. Importe as fontes
 import "./globals.css";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
-// Suprimir logs verbose em desenvolvimento
-if (process.env.NODE_ENV === 'development') {
-  import("@/lib/suppress-logs");
-}
-
 // 2. Configure as fontes
 const poppins = Poppins({ 
   subsets: ["latin"],
