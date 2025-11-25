@@ -1,9 +1,9 @@
 // src/app/api/problemas/route.ts
 import { NextResponse, NextRequest } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { headers } from 'next/headers';
 
-const prisma = new PrismaClient();
+
 
 // ===================================================================================
 // Rota POST: Usada pelo formulário de "nova demanda" para criar um problema

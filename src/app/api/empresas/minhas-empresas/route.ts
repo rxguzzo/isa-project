@@ -1,9 +1,9 @@
 // src/app/api/empresas/minhas-empresas/route.ts
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { headers } from 'next/headers';
 
-const prisma = new PrismaClient();
+
 
 export async function GET() {
   const usuarioId = (await headers()).get('x-user-id');

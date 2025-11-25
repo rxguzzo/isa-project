@@ -1,9 +1,9 @@
 // src/app/api/empresas/[empresaId]/route.ts
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { headers } from 'next/headers';
 
-const prisma = new PrismaClient();
+
 
 // Função auxiliar para verificar se o usuário é o dono da empresa
 async function checkUserAccessToCompany(empresaId: string, userId: string) {

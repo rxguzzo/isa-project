@@ -1,9 +1,7 @@
 // src/app/api/admin/configuracoes/route.ts
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { headers } from 'next/headers';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // Essa API vai gerenciar uma única linha de configurações globais no banco de dados
 // Vamos assumir que existe um modelo 'ConfiguracaoGlobal' no seu schema.prisma

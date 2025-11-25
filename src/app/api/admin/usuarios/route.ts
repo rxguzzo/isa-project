@@ -1,9 +1,9 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { headers } from 'next/headers';
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
+
 
 async function isAdmin() {
   const userRole = (await headers()).get('x-user-role');
