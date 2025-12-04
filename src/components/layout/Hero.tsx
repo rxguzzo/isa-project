@@ -63,7 +63,7 @@ export function Hero() {
             </Link>
             <Link
               href="#sobre"
-              className="inline-flex h-12 items-center justify-center rounded-md border border-gray-200 bg-white px-8 text-sm font-medium shadow-sm transition-colors hover:bg-gray-100"
+              className="inline-flex h-12 items-center justify-center rounded-md border border-gray-200 bg-white  text-black px-8 text-sm font-medium shadow-sm transition-colors hover:bg-gray-100"
             >
             Saiba Mais
               <ArrowRight className="ml-2 h-4 w-4" />

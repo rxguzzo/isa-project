@@ -8,7 +8,7 @@ export function Header() {
       <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
           <PanelTopOpen className="h-6 w-6 text-[#b91c1c]" />
-          <span className="text-lg font-bold">ISA</span>
+          <span className="text-lg font-bold text-black">ISA</span>
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm font-medium md:flex">

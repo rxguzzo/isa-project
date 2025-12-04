@@ -118,14 +118,14 @@ export default function ConfiguracoesEmpresaPage() {
                 onChange={handleChange}
                 required
                 placeholder="Razão Social"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#b91c1c] focus:ring-[#b91c1c]"
+                className="mt-1 block w-full rounded-md text-black border-gray-300 shadow-sm focus:border-[#b91c1c] focus:ring-[#b91c1c]"
               />
               <input
                 name="nomeFantasia"
                 value={formData.nomeFantasia}
                 onChange={handleChange}
                 placeholder="Nome Fantasia"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#b91c1c] focus:ring-[#b91c1c]"
+                className="mt-1 block w-full rounded-md text-black border-gray-300 shadow-sm focus:border-[#b91c1c] focus:ring-[#b91c1c]"
               />
               <input
                 name="cnpj"
@@ -133,28 +133,28 @@ export default function ConfiguracoesEmpresaPage() {
                 onChange={handleChange}
                 required
                 placeholder="CNPJ"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#b91c1c] focus:ring-[#b91c1c]"
+                className="mt-1 block w-full rounded-md text-black border-gray-300 shadow-sm focus:border-[#b91c1c] focus:ring-[#b91c1c]"
               />
               <input
                 name="emailContato"
                 value={formData.emailContato}
                 onChange={handleChange}
                 placeholder="E-mail de contato"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#b91c1c] focus:ring-[#b91c1c]"
+                className="mt-1 block w-full rounded-md text-black border-gray-300 shadow-sm focus:border-[#b91c1c] focus:ring-[#b91c1c]"
               />
               <input
                 name="telefone"
                 value={formData.telefone}
                 onChange={handleChange}
                 placeholder="Telefone"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#b91c1c] focus:ring-[#b91c1c]"
+                className="mt-1 block w-full rounded-md text-black border-gray-300 shadow-sm focus:border-[#b91c1c] focus:ring-[#b91c1c]"
               />
               <input
                 name="endereco"
                 value={formData.endereco}
                 onChange={handleChange}
                 placeholder="Endereço"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#b91c1c] focus:ring-[#b91c1c]"
+                className="mt-1 block w-full rounded-md text-black border-gray-300 shadow-sm focus:border-[#b91c1c] focus:ring-[#b91c1c]"
               />
             </div>
           </fieldset>

@@ -109,7 +109,7 @@ export default function EditarUsuarioPage() {
               value={formData.nome}
               onChange={handleChange}
               required
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#b91c1c] focus:ring-[#b91c1c]"
+              className="block w-full rounded-md text-black border-gray-300 shadow-sm focus:border-[#b91c1c] focus:ring-[#b91c1c]"
             />
           </div>
 
@@ -150,7 +150,7 @@ export default function EditarUsuarioPage() {
               onChange={handleChange}
               type="password"
               placeholder="Nova senha segura"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#b91c1c] focus:ring-[#b91c1c]"
+              className="block w-full rounded-md text-black border-gray-300 shadow-sm focus:border-[#b91c1c] focus:ring-[#b91c1c]"
             />
           </div>
 
