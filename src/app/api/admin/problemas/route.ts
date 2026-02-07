@@ -17,6 +17,12 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const search = searchParams.get('search');
+    const pageParam = searchParams.get('page');
+    const pageSizeParam = searchParams.get('pageSize');
+
+    const page = Math.max(parseInt(pageParam || '1', 10) || 1, 1);
+    const pageSize = Math.min(Math.max(parseInt(pageSizeParam || '10', 10) || 10, 1), 100);
+    const skip = (page - 1) * pageSize;
 
     // 2. Aplique o tipo correto em vez de 'any'
     const where: Prisma.ProblemaWhereInput = {};
@@ -32,20 +38,32 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const problemas = await prisma.problema.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        empresa: {
-          select: {
-            id: true,
-            razaoSocial: true,
-            cnpj: true,
+    const [total, problemas] = await Promise.all([
+      prisma.problema.count({ where }),
+      prisma.problema.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+        include: {
+          empresa: {
+            select: {
+              id: true,
+              razaoSocial: true,
+              cnpj: true,
+            },
           },
         },
-      },
+      }),
+    ]);
+
+    return NextResponse.json({
+      items: problemas,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.max(Math.ceil(total / pageSize), 1),
     });
-    return NextResponse.json(problemas);
   } catch (error) {
     console.error("Erro ao buscar problemas para admin:", error);
     return NextResponse.json({ message: 'Erro interno do servidor ao buscar problemas.' }, { status: 500 });

@@ -31,7 +31,7 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    const companyUserRoutes = ['/dashboard', '/api/empresas', '/api/problemas', '/api/auth/me'];
+    const companyUserRoutes = ['/dashboard', '/api/empresas', '/api/problemas', '/api/auth/me', '/api/usuario'];
     if (companyUserRoutes.some(path => pathname.startsWith(path))) {
       if (userRole !== 'USER') {
         return NextResponse.redirect(new URL('/login', request.url));
@@ -48,7 +48,7 @@ export async function middleware(request: NextRequest) {
       },
     });
 
-  } catch (err) {
+  } catch {
     const response = NextResponse.redirect(new URL('/login', request.url));
     response.cookies.delete('auth_token');
     return response;
@@ -63,5 +63,6 @@ export const config = {
     '/api/empresas/:path*',
     '/api/problemas/:path*',
     '/api/auth/me',
+    '/api/usuario',
   ],
 };

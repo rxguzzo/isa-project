@@ -73,17 +73,9 @@ export const AdminLayout = ({ children }: { children: ReactNode }) => {
   const desktopWidth = isCollapsed ? 'w-20' : 'w-64';
   const mainMarginClass = isCollapsed ? 'lg:ml-20' : 'lg:ml-64';
 
-  // Navegação via router.push com logs (remova console.log quando confirmar)
-  const handleNav = async (href: string) => {
-    // eslint-disable-next-line no-console
-    console.log('[AdminLayout] click ->', href);
+  const handleNav = (href: string) => {
     setIsMobileOpen(false);
-    try {
-      await router.push(href);
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('[AdminLayout] router.push error', err);
-    }
+    router.push(href);
   };
 
   return (

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { Settings, UsersRound, ScrollText, Database, HardDriveDownload, ArrowRight, Lock } from 'lucide-react';
+import { UsersRound, ScrollText, Database, HardDriveDownload, ArrowRight, Lock } from 'lucide-react';
 
 export default function AdminConfiguracoesPage() {
   return (

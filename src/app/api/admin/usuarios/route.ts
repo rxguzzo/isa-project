@@ -17,17 +17,36 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const usuarios = await prisma.usuario.findMany({
-      orderBy: { nome: 'asc' },
-      select: { // Nunca retorne a senha
-        id: true,
-        nome: true,
-        email: true,
-        role: true,
-        createdAt: true,
-      },
+    const { searchParams } = new URL(request.url);
+    const pageParam = searchParams.get('page');
+    const pageSizeParam = searchParams.get('pageSize');
+
+    const page = Math.max(parseInt(pageParam || '1', 10) || 1, 1);
+    const pageSize = Math.min(Math.max(parseInt(pageSizeParam || '10', 10) || 10, 1), 100);
+    const skip = (page - 1) * pageSize;
+
+    const [total, usuarios] = await Promise.all([
+      prisma.usuario.count(),
+      prisma.usuario.findMany({
+        orderBy: { nome: 'asc' },
+        skip,
+        take: pageSize,
+        select: { // Nunca retorne a senha
+          id: true,
+          nome: true,
+          email: true,
+          role: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+    return NextResponse.json({
+      items: usuarios,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.max(Math.ceil(total / pageSize), 1),
     });
-    return NextResponse.json(usuarios);
   } catch (error) {
     console.error("Erro ao buscar usuários:", error);
     return NextResponse.json({ message: 'Erro ao buscar usuários.' }, { status: 500 });
@@ -62,7 +81,8 @@ export async function POST(request: NextRequest) {
       },
     });
     
-    const { senha: _, ...usuarioSeguro } = novoUsuario;
+    const { senha: _senha, ...usuarioSeguro } = novoUsuario;
+    void _senha;
     return NextResponse.json(usuarioSeguro, { status: 201 });
   } catch (error) {
     console.error("Erro ao criar usuário:", error);

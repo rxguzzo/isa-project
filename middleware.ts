@@ -33,7 +33,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Company User Route Protection
-    const companyRoutes = ['/dashboard', '/api/empresas', '/api/problemas', '/api/auth/me'];
+    const companyRoutes = ['/dashboard', '/api/empresas', '/api/problemas', '/api/auth/me', '/api/usuario'];
     if (companyRoutes.some(path => pathname.startsWith(path))) {
       if (userRole !== 'USER') {
         return NextResponse.redirect(new URL('/login', request.url));
@@ -51,7 +51,7 @@ export async function middleware(request: NextRequest) {
       },
     });
 
-  } catch (err) {
+  } catch {
     // If token is invalid, delete it and redirect to login
     const response = NextResponse.redirect(new URL('/login', request.url));
     response.cookies.delete('auth_token');
@@ -70,5 +70,6 @@ export const config = {
     '/api/problemas/:path*', // Protege rotas como /api/problemas/algum-id
     '/api/problemas',        // Protege a rota principal /api/problemas (para o POST)
     '/api/auth/me',
+    '/api/usuario',
   ],
 };

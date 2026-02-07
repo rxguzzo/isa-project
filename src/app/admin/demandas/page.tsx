@@ -31,6 +31,14 @@ type ProblemaCompleto = {
   };
 };
 
+type PaginatedResponse<T> = {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
 export default function AdminDemandasPage() {
   const [demandas, setDemandas] = useState<ProblemaCompleto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,6 +50,9 @@ export default function AdminDemandasPage() {
 
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedDemanda, setSelectedDemanda] = useState<ProblemaCompleto | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const router = useRouter();
 
   // Função para buscar as demandas da API
@@ -51,13 +62,17 @@ export default function AdminDemandasPage() {
       const queryParams = new URLSearchParams();
       if (searchTerm) queryParams.append('search', searchTerm); // Usa o 'searchTerm' DEBOUNCED
       if (filterStatus && filterStatus !== 'all') queryParams.append('status', filterStatus);
+      queryParams.append('page', String(page));
+      queryParams.append('pageSize', '10');
 
       const res = await fetch(`/api/admin/problemas?${queryParams.toString()}`);
       if (!res.ok) {
         throw new Error('Falha ao carregar as demandas.');
       }
-      const data = await res.json();
-      setDemandas(data);
+      const data: PaginatedResponse<ProblemaCompleto> = await res.json();
+      setDemandas(data.items);
+      setTotalPages(data.totalPages);
+      setTotalItems(data.total);
     } catch (err) {
       console.error("Erro ao buscar demandas:", err);
       if (err instanceof Error) {
@@ -68,12 +83,16 @@ export default function AdminDemandasPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [searchTerm, filterStatus, router]); //Dependências incluem searchTerm e filterStatus
+  }, [searchTerm, filterStatus, page, router]); //Dependências incluem searchTerm e filterStatus
 
   // Efeito principal para buscar demandas, ativado por fetchDemandas
   useEffect(() => {
     fetchDemandas();
   }, [fetchDemandas]); // fetchDemandas muda quando searchTerm ou filterStatus mudam
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, filterStatus]);
 
   // --- NOVO useEffect para implementar o Debounce
   useEffect(() => {
@@ -236,6 +255,28 @@ export default function AdminDemandasPage() {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 text-sm text-gray-600">
+          <span>{totalItems} demandas</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(p - 1, 1))}
+              disabled={page <= 1 || isLoading}
+              className="px-3 py-1 rounded border disabled:opacity-50"
+            >
+              Anterior
+            </button>
+            <span>
+              Página {page} de {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+              disabled={page >= totalPages || isLoading}
+              className="px-3 py-1 rounded border disabled:opacity-50"
+            >
+              Próxima
+            </button>
+          </div>
         </div>
       </div>
 

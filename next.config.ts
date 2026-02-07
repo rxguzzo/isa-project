@@ -22,31 +22,36 @@ const nextConfig: NextConfig = {
 };
 
 // Configuração PWA será adicionada em produção
-let configWithPWA = nextConfig;
+const createConfig = async (): Promise<NextConfig> => {
+  let configWithPWA = nextConfig;
 
-if (process.env.NODE_ENV === 'production') {
-  const withPWA = require('next-pwa')({
-    dest: "public",
-    register: true,
-    skipWaiting: true,
-    disable: false,
-    sw: 'sw.js',
-    runtimeCaching: [
-      {
-        urlPattern: /^https?.*/,
-        handler: 'NetworkFirst',
-        options: {
-          cacheName: 'offlineCache',
-          expiration: {
-            maxEntries: 200,
-            maxAgeSeconds: 60 * 60 * 24, // 24 horas
+  if (process.env.NODE_ENV === 'production') {
+    const withPWA = (await import('next-pwa')).default as unknown as (
+      options: Record<string, unknown>
+    ) => (config: NextConfig) => NextConfig;
+    configWithPWA = withPWA({
+      dest: "public",
+      register: true,
+      skipWaiting: true,
+      disable: false,
+      sw: 'sw.js',
+      runtimeCaching: [
+        {
+          urlPattern: /^https?.*/,
+          handler: 'NetworkFirst',
+          options: {
+            cacheName: 'offlineCache',
+            expiration: {
+              maxEntries: 200,
+              maxAgeSeconds: 60 * 60 * 24, // 24 horas
+            },
           },
         },
-      },
-    ],
-  });
-  
-  configWithPWA = withPWA(nextConfig);
-}
+      ],
+    })(nextConfig);
+  }
 
-export default configWithPWA;
+  return configWithPWA;
+};
+
+export default createConfig();

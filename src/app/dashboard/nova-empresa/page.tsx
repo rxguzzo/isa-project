@@ -108,7 +108,7 @@ export default function NovaEmpresaPage() {
         );
         setIsSubmitting(false);
       }
-    } catch (error) {
+    } catch {
       setMessage("Erro de conexão. Verifique sua rede.");
       setIsSubmitting(false);
     }

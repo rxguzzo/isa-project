@@ -55,7 +55,7 @@ export async function PUT(request: Request) {
   try {
     const body = await request.json();
     // Assume que sempre atualizaremos o primeiro/único registro
-    const updatedConfig = await prisma.configuracaoGlobal.updateMany({
+    await prisma.configuracaoGlobal.updateMany({
       // Não há where para findFirst/updateMany, então garantimos que seja o único ou o primeiro
       // Em um ambiente real, você pode querer buscar pelo 'id'
       data: body,

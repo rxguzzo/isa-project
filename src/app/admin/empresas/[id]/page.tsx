@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, FormEvent } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { ArrowLeft, Save } from 'lucide-react';
@@ -23,7 +23,6 @@ type EmpresaDetalhes = {
 
 export default function DetalhesEmpresaPage() {
   const params = useParams();
-  const router = useRouter();
   const empresaId = params.id as string;
 
   const [empresa, setEmpresa] = useState<Partial<EmpresaDetalhes>>({});

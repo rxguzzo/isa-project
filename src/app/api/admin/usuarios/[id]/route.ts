@@ -37,7 +37,8 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     });
     
     // Remove a senha do objeto retornado para segurança
-    const { senha: _, ...usuarioSeguro } = updatedUser;
+    const { senha: _senha, ...usuarioSeguro } = updatedUser;
+    void _senha;
     return NextResponse.json(usuarioSeguro);
   } catch (error) {
     console.error(`Erro ao atualizar usuário ${id}:`, error);

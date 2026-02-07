@@ -31,7 +31,8 @@ export async function POST(request: Request) {
       },
     });
 
-    const { senha: _, ...usuarioSemSenha } = novoUsuario;
+    const { senha: _senha, ...usuarioSemSenha } = novoUsuario;
+    void _senha;
     return NextResponse.json(usuarioSemSenha, { status: 201 });
 
   } catch (error) {

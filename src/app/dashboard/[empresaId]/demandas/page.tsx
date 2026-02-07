@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, PlusCircle } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -20,7 +20,6 @@ type Problema = {
 
 export default function AcompanharDemandasPage() {
   const params = useParams();
-  const router = useRouter();
   const empresaId = params.empresaId as string;
 
   const [problemas, setProblemas] = useState<Problema[]>([]);

@@ -85,7 +85,7 @@ export default function AdminDashboardPage() {
         const dataProblemas = await resProblemas.json();
 
         setStats(dataStats);
-        setRecentesProblemas(dataProblemas);
+        setRecentesProblemas(dataProblemas.items ?? []);
       } catch (err) {
         console.error("Erro no dashboard de admin:", err);
         // O handleLogout é chamado apenas em caso de falha de autenticação/sessão,

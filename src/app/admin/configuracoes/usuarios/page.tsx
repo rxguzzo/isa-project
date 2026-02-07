@@ -13,6 +13,14 @@ type Usuario = {
   createdAt: string;
 };
 
+type PaginatedResponse<T> = {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
 // Tipo para a resposta padrão com mensagem
 type ApiMessage = { message?: string };
 
@@ -27,6 +35,9 @@ const initialUserState: UsuarioFormState = { id: '', nome: '', email: '', senha:
 export default function GerenciarUsuariosPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -41,16 +52,18 @@ export default function GerenciarUsuariosPage() {
   const fetchUsuarios = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/admin/usuarios');
+      const res = await fetch(`/api/admin/usuarios?page=${page}&pageSize=10`);
       if (!res.ok) throw new Error('Falha ao carregar usuários.');
-      const data: Usuario[] = await res.json();
-      setUsuarios(data);
+      const data: PaginatedResponse<Usuario> = await res.json();
+      setUsuarios(data.items);
+      setTotalPages(data.totalPages);
+      setTotalItems(data.total);
     } catch (err) {
       console.error(err);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     fetchUsuarios();
@@ -259,6 +272,29 @@ export default function GerenciarUsuariosPage() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 text-sm text-gray-600">
+        <span>{totalItems} usuários</span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPage((p) => Math.max(p - 1, 1))}
+            disabled={page <= 1 || isLoading}
+            className="px-3 py-1 rounded border disabled:opacity-50"
+          >
+            Anterior
+          </button>
+          <span>
+            Página {page} de {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+            disabled={page >= totalPages || isLoading}
+            className="px-3 py-1 rounded border disabled:opacity-50"
+          >
+            Próxima
+          </button>
         </div>
       </div>
 

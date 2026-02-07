@@ -56,7 +56,12 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     const body = await request.json();
     
     // Remove campos que não devem ser atualizados diretamente por esta rota para segurança
-    const { id: bodyId, createdAt, updatedAt, usuario, problemas, ...dataToUpdate } = body;
+    const dataToUpdate = { ...body } as Record<string, unknown>;
+    delete dataToUpdate.id;
+    delete dataToUpdate.createdAt;
+    delete dataToUpdate.updatedAt;
+    delete dataToUpdate.usuario;
+    delete dataToUpdate.problemas;
 
     const updatedEmpresa = await prisma.empresa.update({
       where: { id },

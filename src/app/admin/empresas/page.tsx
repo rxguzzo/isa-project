@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { PlusCircle, Building2, User2, Mail, Phone, ArrowRight } from 'lucide-react';
+import { PlusCircle, Building2, User2, Mail, ArrowRight } from 'lucide-react';
 
 // 1. CORREÇÃO NA TIPAGEM: Trocado 'usuarios' por 'usuario'
 interface Empresa {
@@ -21,21 +21,34 @@ interface Empresa {
   }; 
 }
 
+type PaginatedResponse<T> = {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
 export default function AdminEmpresasPage() {
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
   const fetchEmpresas = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/admin/empresas');
+      const response = await fetch(`/api/admin/empresas?page=${page}&pageSize=9`);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Falha ao buscar as empresas.');
       }
-      const data = await response.json();
-      setEmpresas(data);
+      const data: PaginatedResponse<Empresa> = await response.json();
+      setEmpresas(data.items);
+      setTotalPages(data.totalPages);
+      setTotalItems(data.total);
     } catch (err) {
       console.error('Erro ao buscar empresas:', err);
       let errorMessage = 'Erro desconhecido ao carregar empresas.';
@@ -46,7 +59,7 @@ export default function AdminEmpresasPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     fetchEmpresas();
@@ -92,35 +105,59 @@ export default function AdminEmpresasPage() {
           <p className="text-gray-500 mb-8">Comece cadastrando a primeira empresa.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {empresas.map((empresa) => (
-            <div key={empresa.id} className="bg-white p-6 rounded-xl shadow-md border hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-4 pb-3 border-b">
-                  <h2 className="text-xl font-bold text-gray-800 flex items-center gap-3">
-                    <Building2 className="h-6 w-6 text-red-600" />
-                    {empresa.razaoSocial}
-                  </h2>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {empresas.map((empresa) => (
+              <div key={empresa.id} className="bg-white p-6 rounded-xl shadow-md border hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-4 pb-3 border-b">
+                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-3">
+                      <Building2 className="h-6 w-6 text-red-600" />
+                      {empresa.razaoSocial}
+                    </h2>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <p className="text-gray-600"><span className="font-semibold">CNPJ:</span> {empresa.cnpj}</p>
+                    <p className="flex items-center text-gray-600"><Mail className="h-4 w-4 mr-2 text-gray-400" /> {empresa.emailContato || 'N/A'}</p>
+                    {/* <p className="flex items-center text-gray-600"><Phone className="h-4 w-4 mr-2 text-gray-400" /> {empresa.telefoneContato || 'N/A'}</p> */}
+                  </div>
                 </div>
-                <div className="space-y-2 text-sm">
-                  <p className="text-gray-600"><span className="font-semibold">CNPJ:</span> {empresa.cnpj}</p>
-                  <p className="flex items-center text-gray-600"><Mail className="h-4 w-4 mr-2 text-gray-400" /> {empresa.emailContato || 'N/A'}</p>
-                  {/* <p className="flex items-center text-gray-600"><Phone className="h-4 w-4 mr-2 text-gray-400" /> {empresa.telefoneContato || 'N/A'}</p> */}
+                <div className="flex justify-between items-center text-sm text-gray-500 pt-4 border-t mt-4">
+                  <div className="flex items-center">
+                    <User2 className="h-5 w-5 mr-2 text-gray-400" />
+                    {/* 2. CORREÇÃO NA EXIBIÇÃO: Mostra o nome/email do único usuário dono */}
+                    <span>Dono: {empresa.usuario?.nome || empresa.usuario?.email || 'Não associado'}</span>
+                  </div>
+                  <Link href={`/admin/empresas/${empresa.id}`} className="font-semibold text-red-600 hover:text-red-800 flex items-center gap-1">
+                    Ver Detalhes <ArrowRight className="h-4 w-4" />
+                  </Link>
                 </div>
               </div>
-              <div className="flex justify-between items-center text-sm text-gray-500 pt-4 border-t mt-4">
-                <div className="flex items-center">
-                  <User2 className="h-5 w-5 mr-2 text-gray-400" />
-                  {/* 2. CORREÇÃO NA EXIBIÇÃO: Mostra o nome/email do único usuário dono */}
-                  <span>Dono: {empresa.usuario?.nome || empresa.usuario?.email || 'Não associado'}</span>
-                </div>
-                <Link href={`/admin/empresas/${empresa.id}`} className="font-semibold text-red-600 hover:text-red-800 flex items-center gap-1">
-                  Ver Detalhes <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
+            ))}
+          </div>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6 text-sm text-gray-600">
+            <span>{totalItems} empresas</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                disabled={page <= 1 || isLoading}
+                className="px-3 py-1 rounded border disabled:opacity-50"
+              >
+                Anterior
+              </button>
+              <span>
+                Página {page} de {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                disabled={page >= totalPages || isLoading}
+                className="px-3 py-1 rounded border disabled:opacity-50"
+              >
+                Próxima
+              </button>
             </div>
-          ))}
-        </div>
+          </div>
+        </>
       )}
     </AdminLayout>
   );

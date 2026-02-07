@@ -4,8 +4,7 @@
 import { useState, FormEvent, ChangeEventHandler, ElementType } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { PanelTopOpen, User, Mail, Lock } from 'lucide-react';
-import { Chrome } from 'lucide-react';
+import { PanelTopOpen, User, Mail, Lock, Chrome } from 'lucide-react';
 
 // ===================================================================
 // ===== MUDANÇA CRÍTICA: Definindo o tipo e o componente FORA =====
@@ -83,7 +82,7 @@ export default function PaginaCadastro() {
         setMessage(data.message || 'Erro no cadastro. Tente novamente.');
         setIsSubmitting(false);
       }
-    } catch (error) {
+    } catch {
       setMessage('Erro de conexão. Verifique sua rede.');
       setIsSubmitting(false);
     }

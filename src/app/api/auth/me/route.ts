@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(request: Request) {
+export async function GET() {
   const usuarioId = (await headers()).get('x-user-id');
 
   if (!usuarioId) {

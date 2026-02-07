@@ -68,7 +68,7 @@ export default function PaginaLogin() {
         setStatus(`Erro: ${data.message || 'Credenciais inválidas.'}`);
         setIsSubmitting(false);
       }
-    } catch (error) {
+    } catch {
       setStatus('Erro de conexão. Tente novamente.');
       setIsSubmitting(false);
     }

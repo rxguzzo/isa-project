@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
 // deve ser feita em um endpoint específico como /api/empresas/[empresaId]/problemas.
 // Retornamos um erro claro para evitar uso incorreto.
 // ===================================================================================
-export async function GET(request: NextRequest) {
+export async function GET() {
   return NextResponse.json(
     { message: 'Endpoint incorreto. Para buscar demandas de uma empresa, use GET /api/empresas/[empresaId]/problemas' },
     { status: 404 }

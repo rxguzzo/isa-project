@@ -14,6 +14,12 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
+    const pageParam = searchParams.get('page');
+    const pageSizeParam = searchParams.get('pageSize');
+
+    const page = Math.max(parseInt(pageParam || '1', 10) || 1, 1);
+    const pageSize = Math.min(Math.max(parseInt(pageSizeParam || '10', 10) || 10, 1), 100);
+    const skip = (page - 1) * pageSize;
 
     const where: Prisma.EmpresaWhereInput = {};
 
@@ -25,23 +31,34 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const empresas = await prisma.empresa.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      // CORREÇÃO AQUI: Trocado 'usuarios' por 'usuario'
-      // Inclui o usuário único que é o dono da empresa
-      include: {
-        usuario: {
-          select: {
-            id: true,
-            nome: true,
-            email: true,
+    const [total, empresas] = await Promise.all([
+      prisma.empresa.count({ where }),
+      prisma.empresa.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+        // CORREÇÃO AQUI: Trocado 'usuarios' por 'usuario'
+        // Inclui o usuário único que é o dono da empresa
+        include: {
+          usuario: {
+            select: {
+              id: true,
+              nome: true,
+              email: true,
+            },
           },
         },
-      },
-    });
+      }),
+    ]);
 
-    return NextResponse.json(empresas);
+    return NextResponse.json({
+      items: empresas,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.max(Math.ceil(total / pageSize), 1),
+    });
   } catch (error) {
     console.error("Erro ao buscar empresas para admin:", error);
     return NextResponse.json({ message: 'Erro interno do servidor.' }, { status: 500 });
