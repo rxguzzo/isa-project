@@ -11,11 +11,24 @@ const getSecretKey = () => {
   return new TextEncoder().encode(secret);
 };
 
+// Rotas de API respondem com JSON (401/403); páginas redirecionam para o login.
+function negarAcesso(request: NextRequest, status: 401 | 403, limparCookie = false) {
+  const isApi = request.nextUrl.pathname.startsWith('/api/');
+  const response = isApi
+    ? NextResponse.json(
+        { message: status === 401 ? 'Não autenticado.' : 'Acesso negado.' },
+        { status }
+      )
+    : NextResponse.redirect(new URL('/login', request.url));
+  if (limparCookie) response.cookies.delete('auth_token');
+  return response;
+}
+
 export async function middleware(request: NextRequest) {
   const tokenCookie = request.cookies.get('auth_token');
 
   if (!tokenCookie) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return negarAcesso(request, 401);
   }
 
   try {
@@ -27,14 +40,14 @@ export async function middleware(request: NextRequest) {
 
     if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
       if (userRole !== 'ADMIN') {
-        return NextResponse.redirect(new URL('/login', request.url));
+        return negarAcesso(request, 403);
       }
     }
 
     const companyUserRoutes = ['/dashboard', '/api/empresas', '/api/problemas', '/api/auth/me', '/api/usuario'];
     if (companyUserRoutes.some(path => pathname.startsWith(path))) {
       if (userRole !== 'USER') {
-        return NextResponse.redirect(new URL('/login', request.url));
+        return negarAcesso(request, 403);
       }
     }
     
@@ -49,9 +62,8 @@ export async function middleware(request: NextRequest) {
     });
 
   } catch {
-    const response = NextResponse.redirect(new URL('/login', request.url));
-    response.cookies.delete('auth_token');
-    return response;
+    // Token inválido ou expirado
+    return negarAcesso(request, 401, true);
   }
 }
 

@@ -5,8 +5,11 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  const adminEmail = 'admin@isa.com';
-  const adminPassword = 'senha-forte-123';
+  const adminEmail = process.env.ADMIN_EMAIL ?? 'admin@isa.com';
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword || adminPassword.length < 12) {
+    throw new Error('Defina ADMIN_PASSWORD (mínimo 12 caracteres) no .env antes de rodar o seed.');
+  }
 
   const existingAdmin = await prisma.usuario.findUnique({
     where: { email: adminEmail },

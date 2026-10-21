@@ -130,10 +130,10 @@ export default function ConfiguracoesEmpresaPage() {
               <input
                 name="cnpj"
                 value={formData.cnpj}
-                onChange={handleChange}
-                required
+                readOnly
+                title="O CNPJ não pode ser alterado depois do cadastro."
                 placeholder="CNPJ"
-                className="mt-1 block w-full rounded-md text-black border-gray-300 shadow-sm focus:border-[#b91c1c] focus:ring-[#b91c1c]"
+                className="mt-1 block w-full rounded-md text-black bg-gray-100 cursor-not-allowed border-gray-300 shadow-sm"
               />
               <input
                 name="emailContato"

@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
+import { senhaForte, REGRA_SENHA } from '@/lib/senha';
 
 export async function POST(request: Request) {
   try {
@@ -11,8 +12,8 @@ export async function POST(request: Request) {
     if (!nome || !email || !senha) {
       return NextResponse.json({ message: 'Nome, e-mail e senha são obrigatórios.' }, { status: 400 });
     }
-    if (senha.length < 8) {
-      return NextResponse.json({ message: 'A senha deve ter pelo menos 8 caracteres.' }, { status: 400 });
+    if (!senhaForte(senha)) {
+      return NextResponse.json({ message: REGRA_SENHA }, { status: 400 });
     }
 
     const existingUser = await prisma.usuario.findUnique({ where: { email } });

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
+import { senhaForte, REGRA_SENHA } from '@/lib/senha';
 
 type UpdatePayload = {
   nome?: string;
@@ -64,8 +65,8 @@ export async function PUT(request: Request) {
       if (!senhaAtual) {
         return NextResponse.json({ message: 'Senha atual é obrigatória para alterar a senha.' }, { status: 400 });
       }
-      if (!novaSenha || novaSenha.length < 8) {
-        return NextResponse.json({ message: 'A nova senha deve ter pelo menos 8 caracteres.' }, { status: 400 });
+      if (!senhaForte(novaSenha)) {
+        return NextResponse.json({ message: REGRA_SENHA }, { status: 400 });
       }
       if (novaSenha !== confirmarSenha) {
         return NextResponse.json({ message: 'A confirmação da senha não corresponde à nova senha.' }, { status: 400 });
