@@ -41,22 +41,29 @@ export async function PUT(request: Request, context: { params: Promise<{ empresa
     return NextResponse.json({ message: 'JSON inválido.' }, { status: 400 });
   }
 
-  // Lista de campos que o dono pode editar. Qualquer outro campo enviado
+  // Só estes campos podem ser editados pelo dono. Qualquer outro campo enviado
   // pelo cliente (ex.: usuarioId, cnpj, id) é ignorado.
-  const CAMPOS_EDITAVEIS = ['razaoSocial', 'nomeFantasia', 'endereco', 'telefone', 'emailContato'] as const;
-  const data: Partial<Record<(typeof CAMPOS_EDITAVEIS)[number], string | null>> = {};
+  const data: Prisma.EmpresaUpdateInput = {};
 
-  for (const campo of CAMPOS_EDITAVEIS) {
+  // Razão social é obrigatória no banco: se vier, precisa ser texto não vazio
+  if ('razaoSocial' in body) {
+    const razaoSocial = body.razaoSocial;
+    if (typeof razaoSocial !== 'string' || razaoSocial.trim() === '') {
+      return NextResponse.json({ message: 'Razão social é obrigatória.' }, { status: 400 });
+    }
+    data.razaoSocial = razaoSocial.trim();
+  }
+
+  // Campos opcionais: texto, ou vazio/null para limpar
+  const CAMPOS_OPCIONAIS = ['nomeFantasia', 'endereco', 'telefone', 'emailContato'] as const;
+  for (const campo of CAMPOS_OPCIONAIS) {
     if (!(campo in body)) continue;
     const valor = body[campo];
     if (valor !== null && typeof valor !== 'string') {
       return NextResponse.json({ message: `Campo ${campo} inválido.` }, { status: 400 });
     }
-    data[campo] = typeof valor === 'string' ? valor.trim() : null;
-  }
-
-  if (data.razaoSocial === '' || data.razaoSocial === null) {
-    return NextResponse.json({ message: 'Razão social é obrigatória.' }, { status: 400 });
+    const texto = typeof valor === 'string' ? valor.trim() : '';
+    data[campo] = texto === '' ? null : texto;
   }
 
   try {
